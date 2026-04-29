@@ -1,18 +1,35 @@
 class DiaryImage {
   final String url;
+  final String localPath;
   final String caption;
 
-  const DiaryImage({required this.url, this.caption = ''});
+  const DiaryImage({
+    this.url       = '',
+    this.localPath = '',
+    this.caption   = '',
+  });
 
-  DiaryImage copyWith({String? url, String? caption}) =>
-      DiaryImage(url: url ?? this.url, caption: caption ?? this.caption);
+  bool get hasContent => url.isNotEmpty || localPath.isNotEmpty;
+  String get displayPath => localPath.isNotEmpty ? localPath : url;
+
+  DiaryImage copyWith({String? url, String? localPath, String? caption}) =>
+      DiaryImage(
+        url:       url       ?? this.url,
+        localPath: localPath ?? this.localPath,
+        caption:   caption   ?? this.caption,
+      );
 
   factory DiaryImage.fromJson(Map<String, dynamic> j) => DiaryImage(
-    url:     j['url'] as String? ?? '',
-    caption: j['caption'] as String? ?? '',
+    url:       j['url']       as String? ?? '',
+    localPath: j['localPath'] as String? ?? '',
+    caption:   j['caption']   as String? ?? '',
   );
 
-  Map<String, dynamic> toJson() => {'url': url, 'caption': caption};
+  Map<String, dynamic> toJson() => {
+    'url':       url,
+    'localPath': localPath,
+    'caption':   caption,
+  };
 }
 
 class DiaryEntry {
@@ -32,7 +49,7 @@ class DiaryEntry {
   );
 
   Map<String, dynamic> toJson() => {
-    'text': text,
+    'text':   text,
     'images': images.map((i) => i.toJson()).toList(),
   };
 
