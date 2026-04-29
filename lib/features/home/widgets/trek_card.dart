@@ -1,11 +1,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/trek.dart';
 import '../../../data/repositories/trek_repository.dart';
 import '../../../shared/widgets/diff_badge.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TrekCard — Pangea-style: tall card, full-bleed photo hero, dark info panel.
+// Font weights match the auth/login screen (Poppins w700 title, w400 sub).
+// ─────────────────────────────────────────────────────────────────────────────
 class TrekCard extends StatelessWidget {
   final Trek trek;
   final VoidCallback onTap;
@@ -14,129 +19,143 @@ class TrekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Compute once per build; stable across hot-reloads via deterministic hash
-    final photo    = getTrekPhotoUrl(trek);
+    final photo    = trek.coverImageUrl?.isNotEmpty == true
+        ? trek.coverImageUrl!
+        : getTrekPhotoUrl(trek);
     final progress = trek.progress;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 140,
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.borderLight, width: 1),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x24000000),
-              blurRadius: 20,
-              offset: Offset(0, 6),
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            fit: StackFit.expand,
+          borderRadius: BorderRadius.circular(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Nature photo ──────────────────────────────────────────────
-              CachedNetworkImage(
-                imageUrl: photo,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => const ColoredBox(color: AppColors.heroDark),
-                errorWidget:  (_, __, ___) => const ColoredBox(color: AppColors.heroDark),
-              ),
-
-              // ── Diagonal scrim — const ────────────────────────────────────
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xA6000000), Color(0x33000000)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
+              // ── Hero photo (top 55%) ──────────────────────────────────────
+              SizedBox(
+                height: 150,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: photo,
+                      fit: BoxFit.cover,
+                      alignment: const Alignment(0, -0.2),
+                      placeholder: (_, __) => const ColoredBox(color: AppColors.heroDark),
+                      errorWidget:  (_, __, ___) => const ColoredBox(color: AppColors.heroDark),
+                    ),
+                    // Subtle bottom scrim so text below doesn't feel disconnected
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Color(0x66000000)],
+                        ),
+                      ),
+                    ),
+                    // Badges top-right
+                    Positioned(
+                      top: 10, right: 10,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          DiffBadge(difficulty: trek.difficulty),
+                          if (trek.completed) ...[
+                            const SizedBox(height: 4),
+                            const _DoneBadge(),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              // ── Card content ──────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.all(14),
+              // ── Info panel (dark, Pangea-style) ──────────────────────────
+              Container(
+                color: AppColors.surface,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Top row
+                    // Trek name — bold, centered, auth-screen style
+                    Text(
+                      trek.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Region + duration
+                    Text(
+                      '${trek.region.isNotEmpty ? trek.region : 'Unknown region'}  ·  ${trek.totalDays} days',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Progress row
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                trek.name,
-                                style: AppTextStyles.cardTitleOnPhoto,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                trek.region,
-                                style: AppTextStyles.label.copyWith(
-                                  color: AppColors.onPhotoDim, fontSize: 11,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                        Text(
+                          '${trek.daysLogged}/${trek.totalDays} days logged',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textMuted,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            DiffBadge(difficulty: trek.difficulty),
-                            if (trek.completed) ...[
-                              const SizedBox(height: 4),
-                              const _DoneBadge(),
-                            ],
-                          ],
+                        const Spacer(),
+                        Text(
+                          '${trek.stopsCount} stops',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textMuted,
+                          ),
                         ),
                       ],
                     ),
-
-                    // Bottom: progress bar
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${trek.totalDays} days · ${trek.stopsCount} stops',
-                              style: AppTextStyles.label.copyWith(
-                                color: AppColors.onPhotoSubtle, fontSize: 11,
-                              ),
-                            ),
-                            Text(
-                              '${trek.daysLogged}/${trek.totalDays}',
-                              style: AppTextStyles.label.copyWith(
-                                color: AppColors.onPhotoSubtle, fontSize: 11,
-                              ),
-                            ),
-                          ],
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: AppColors.border,
+                        valueColor: AlwaysStoppedAnimation(
+                          trek.completed ? AppColors.accentLight : AppColors.accent,
                         ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            backgroundColor: const Color(0x26FFFFFF),
-                            valueColor: const AlwaysStoppedAnimation(AppColors.accentLight),
-                            minHeight: 3,
-                          ),
-                        ),
-                      ],
+                        minHeight: 3,
+                      ),
                     ),
                   ],
                 ),
@@ -149,7 +168,6 @@ class TrekCard extends StatelessWidget {
   }
 }
 
-// const — no rebuild cost, used on every completed trek card
 class _DoneBadge extends StatelessWidget {
   const _DoneBadge();
 
@@ -157,7 +175,7 @@ class _DoneBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
     decoration: const BoxDecoration(
-      color: Color(0x33A0E0C0),   // accentLight at 20% — fully const
+      color: Color(0x33A0E0C0),
       borderRadius: BorderRadius.all(Radius.circular(20)),
     ),
     child: Text(

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/trek.dart';
 import '../models/day.dart';
 import '../models/stop.dart';
+import '../models/diary_entry.dart';
 import '../../core/constants/app_constants.dart';
 // ignore: unused_import
 import '../../core/utils/id_generator.dart';
@@ -122,6 +123,16 @@ class TrekRepository {
     });
   }
 
+  List<Trek> setDiary(String trekId, int dayNum, DiaryEntry entry) {
+    return updateTrek(trekId, (trek) {
+      final days = trek.days.map((d) {
+        if (d.dayNum != dayNum) return d;
+        return d.copyWith(diary: entry);
+      }).toList();
+      return trek.copyWith(days: days);
+    });
+  }
+
   void clearAll() => _prefs.remove(AppConstants.storageKeyTreks);
 }
 
@@ -146,6 +157,7 @@ class TrekListNotifier extends StateNotifier<List<Trek>> {
   void addStop(String trekId, int dayNum, TrekStop stop) => state = _repo.addStop(trekId, dayNum, stop);
   void updateStop(String trekId, int dayNum, String stopId, TrekStop Function(TrekStop) u) =>
       state = _repo.updateStop(trekId, dayNum, stopId, u);
+  void setDiary(String trekId, int dayNum, DiaryEntry entry) => state = _repo.setDiary(trekId, dayNum, entry);
   void clearAll() { _repo.clearAll(); state = []; }
 }
 

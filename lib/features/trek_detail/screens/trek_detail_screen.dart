@@ -71,6 +71,12 @@ class _TrekDetailScreenState extends ConsumerState<TrekDetailScreen> {
             right: 16,
             child: Row(children: [
               GlassButton(
+                label: 'Edit',
+                icon: const Icon(Icons.edit_rounded, size: 13, color: Colors.white),
+                onPressed: () => context.push('/trek/${trek.id}/edit'),
+              ),
+              const SizedBox(width: 8),
+              GlassButton(
                 label: 'Path',
                 icon: const Icon(Icons.route_rounded, size: 13, color: Colors.white),
                 onPressed: () => context.push('/trek/${trek.id}/path'),
@@ -137,6 +143,8 @@ class _TrekDetailScreenState extends ConsumerState<TrekDetailScreen> {
                           '/trek/${trek.id}/add-stop/${day.dayNum}'),
                         onStopTap: (stop) => context.push(
                           '/trek/${trek.id}/stop/${day.dayNum}/${stop.id}'),
+                        onDiary: () => context.push(
+                          '/trek/${trek.id}/diary/${day.dayNum}'),
                       )),
                     ],
                   ),
@@ -158,10 +166,11 @@ class _DayCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onAddStop;
   final ValueChanged<TrekStop> onStopTap;
+  final VoidCallback onDiary;
 
   const _DayCard({
     required this.day, required this.isOpen, required this.onTap,
-    required this.onAddStop, required this.onStopTap,
+    required this.onAddStop, required this.onStopTap, required this.onDiary,
   });
 
   @override
@@ -265,7 +274,7 @@ class _DayCard extends StatelessWidget {
               else ...[
                 ...day.stops.map((s) => _StopRow(stop: s, onTap: () => onStopTap(s))),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: GestureDetector(
                     onTap: onAddStop,
                     child: Row(children: [
@@ -278,6 +287,60 @@ class _DayCard extends StatelessWidget {
                   ),
                 ),
               ],
+              // ── Diary button ──────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                child: GestureDetector(
+                  onTap: onDiary,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5B8A6E).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          day.diary != null && !day.diary!.isEmpty
+                              ? Icons.auto_stories_rounded
+                              : Icons.edit_note_rounded,
+                          size: 15,
+                          color: AppColors.accentLight,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          day.diary != null && !day.diary!.isEmpty
+                              ? 'View diary entry'
+                              : 'Add diary entry',
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.accentLight, fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (day.diary != null && day.diary!.images.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${day.diary!.images.length} photo${day.diary!.images.length == 1 ? '' : 's'}',
+                              style: AppTextStyles.label.copyWith(
+                                color: AppColors.accentLight, fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ],
         ),

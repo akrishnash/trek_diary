@@ -332,7 +332,9 @@ class _FeaturedTrekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final photo    = getTrekPhotoUrl(trek);
+    final photo    = trek.coverImageUrl?.isNotEmpty == true
+        ? trek.coverImageUrl!
+        : getTrekPhotoUrl(trek);
     final nextDay  = trek.days.where((d) => d.stops.isEmpty).firstOrNull;
     final progress = trek.progress;
 

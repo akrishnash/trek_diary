@@ -13,6 +13,8 @@ import '../../features/add_stop/screens/add_stop_screen.dart';
 import '../../features/trek_path/screens/trek_path_screen.dart';
 import '../../features/summary/screens/summary_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/edit_trek/screens/edit_trek_screen.dart';
+import '../../features/diary/screens/diary_entry_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RouterNotifier — bridges Riverpod auth state to GoRouter's refreshListenable.
@@ -84,6 +86,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/trek/:id/summary',
         builder: (_, state) => SummaryScreen(
           trekId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/trek/:id/edit',
+        builder: (_, state) => EditTrekScreen(
+          trekId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/trek/:id/diary/:dayNum',
+        builder: (_, state) => DiaryEntryScreen(
+          trekId: state.pathParameters['id']!,
+          dayNum: int.parse(state.pathParameters['dayNum']!),
         ),
       ),
     ],
