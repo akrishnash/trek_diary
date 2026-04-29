@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trek Diary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0D1208;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; font-family: 'Poppins', sans-serif;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(circle at 25% 25%, rgba(91,138,110,0.1) 0%, transparent 55%),
+        radial-gradient(circle at 75% 75%, rgba(193,127,62,0.06) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.06)} }
+    .screen-slide { animation: slideUp 0.22s ease; }
+    .phone-wrap { animation: fadeIn 0.4s ease; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(91,138,110,0.25); border-radius: 2px; }
+    input::placeholder, textarea::placeholder { color: #C8C5BE; }
+    input, textarea, select, button { font-family: 'Poppins', sans-serif; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// ─────────────────────────────────────────────────────────────────────────────
+// trek-data.jsx — Data Layer
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SAMPLE_TREKS = [
+  {
+    id: 'trek-1',
+    name: 'Valley of Flowers',
+    region: 'Uttarakhand, India',
+    difficulty: 'Moderate',
+    totalDays: 6,
+    coverColor: '#2D5016',
+    coverGradient: 'linear-gradient(145deg, #1A3A0A 0%, #3D6B1A 45%, #7A8C3A 100%)',
+    description: 'A UNESCO World Heritage Site blooming with hundreds of species of wildflowers set amidst towering Himalayan peaks.',
+    days: [
+      {
+        dayNum: 1, title: 'Govindghat to Ghangaria',
+        stops: [
+          { id: 's1', name: 'Govindghat', elevation: 1828, distance: 0, weather: '☀️ Sunny', mood: '😊 Happy', notes: 'Starting point of the trek. Crisp mountain morning air, filled with anticipation.', photos: [] },
+          { id: 's2', name: 'Bhyundar Village', elevation: 2200, distance: 4, weather: '⛅ Partly Cloudy', mood: '🥾 On the Move', notes: 'Quaint village with local tea stalls. Stopped for chai and momos.', photos: [] },
+          { id: 's3', name: 'Ghangaria', elevation: 3048, distance: 13, weather: '🌧️ Rainy', mood: '😴 Tired', notes: 'Base camp for Valley of Flowers. Cozy guesthouse with warm blankets. Rain pattering on the tin roof all night.', photos: [] }
+        ]
+      },
+      {
+        dayNum: 2, title: 'Into the Valley',
+        stops: [
+          { id: 's4', name: 'Valley Entry Gate', elevation: 3352, distance: 3, weather: '🌫️ Misty', mood: '🤩 Amazing', notes: 'The moment the valley opened up — absolutely breathtaking. Mist rolling between peaks.', photos: [] },
+          { id: 's5', name: 'Pushpawati River', elevation: 3600, distance: 7, weather: '☀️ Sunny', mood: '😌 Peaceful', notes: 'Crystal clear glacial water rushing over smooth stones. Stopped for lunch on a meadow.', photos: [] }
+        ]
+      },
+      { dayNum: 3, title: 'Hemkund Sahib', stops: [] },
+      { dayNum: 4, title: 'Valley Deep Exploration', stops: [] },
+      { dayNum: 5, title: 'Return to Ghangaria', stops: [] },
+      { dayNum: 6, title: 'Descent to Govindghat', stops: [] }
+    ],
+    createdAt: '2025-09-01', completed: true
+  },
+  {
+    id: 'trek-2',
+    name: 'Hampta Pass',
+    region: 'Himachal Pradesh, India',
+    difficulty: 'Challenging',
+    totalDays: 5,
+    coverColor: '#1A1A2E',
+    coverGradient: 'linear-gradient(145deg, #0D0D1E 0%, #1E2A4A 50%, #3D4A7A 100%)',
+    description: 'A dramatic high-altitude pass connecting the lush Kullu valley to the barren moonscape of Lahaul.',
+    days: [
+      {
+        dayNum: 1, title: 'Manali to Chika',
+        stops: [
+          { id: 's6', name: 'Manali', elevation: 2050, distance: 0, weather: '☀️ Sunny', mood: '😊 Happy', notes: 'Packed up gear and headed out at dawn. The town was barely waking up.', photos: [] },
+          { id: 's7', name: 'Chika Camp', elevation: 3100, distance: 8, weather: '💨 Windy', mood: '🥾 On the Move', notes: 'First campsite. Pine forests all around. Cooked dal on a camp stove.', photos: [] }
+        ]
+      },
+      { dayNum: 2, title: 'Chika to Balu Ka Ghera', stops: [] },
+      { dayNum: 3, title: 'Hampta Pass Summit', stops: [] },
+      { dayNum: 4, title: 'Shea Goru to Chatru', stops: [] },
+      { dayNum: 5, title: 'Chandratal Lake', stops: [] }
+    ],
+    createdAt: '2025-08-15', completed: false
+  }
+];
+
+const TrekData = {
+  getAll() {
+    try {
+      const stored = localStorage.getItem('trekdiary_treks');
+      if (stored) return JSON.parse(stored);
+    } catch(e) {}
+    localStorage.setItem('trekdiary_treks', JSON.stringify(SAMPLE_TREKS));
+    return SAMPLE_TREKS;
+  },
+  save(treks) {
+    localStorage.setItem('trekdiary_treks', JSON.stringify(treks));
+  },
+  addTrek(trek) {
+    const treks = TrekData.getAll();
+    treks.unshift(trek);
+    TrekData.save(treks);
+    return treks;
+  },
+  updateTrek(id, updates) {
+    const treks = TrekData.getAll();
+    const idx = treks.findIndex(t => t.id === id);
+    if (idx !== -1) { treks[idx] = { ...treks[idx], ...updates }; TrekData.save(treks); }
+    return treks;
+  },
+  deleteTrek(id) {
+    const treks = TrekData.getAll().filter(t => t.id !== id);
+    TrekData.save(treks);
+    return treks;
+  },
+  addStop(trekId, dayNum, stop) {
+    const treks = TrekData.getAll();
+    const trek = treks.find(t => t.id === trekId);
+    if (trek) {
+      const day = trek.days.find(d => d.dayNum === dayNum);
+      if (day) { day.stops.push(stop); TrekData.save(treks); }
+    }
+    return treks;
+  },
+  updateStop(trekId, dayNum, stopId, updates) {
+    const treks = TrekData.getAll();
+    const trek = treks.find(t => t.id === trekId);
+    if (trek) {
+      const day = trek.days.find(d => d.dayNum === dayNum);
+      if (day) {
+        const stopIdx = day.stops.findIndex(s => s.id === stopId);
+        if (stopIdx !== -1) { day.stops[stopIdx] = { ...day.stops[stopIdx], ...updates }; TrekData.save(treks); }
+      }
+    }
+    return treks;
+  }
+};
+
+const NATURE_PHOTOS = [
+  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=700&q=80',
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=700&q=80',
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&q=80',
+  'https://images.unsplash.com/photo-1551632811-561732d1e306?w=700&q=80',
+  'https://images.unsplash.com/photo-1448375240586-882707db888b?w=700&q=80',
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=700&q=80',
+];
+
+const COVER_GRADIENTS = [
+  'linear-gradient(145deg, #1A3A0A 0%, #3D6B1A 45%, #7A8C3A 100%)',
+  'linear-gradient(145deg, #0D0D1E 0%, #1E2A4A 50%, #3D4A7A 100%)',
+  'linear-gradient(145deg, #3A1A0A 0%, #7A3D1A 45%, #C87A3D 100%)',
+  'linear-gradient(145deg, #0A1A2E 0%, #1A3A5A 50%, #2E6A8A 100%)',
+  'linear-gradient(145deg, #2E0A1A 0%, #5A1A3D 50%, #8A3A6A 100%)',
+  'linear-gradient(145deg, #1A2E0A 0%, #3D5A1A 50%, #6A8A2E 100%)',
+];
+
+const HOME_HERO = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80';
+const WEATHER_OPTIONS = ['☀️ Sunny','⛅ Partly Cloudy','☁️ Cloudy','🌧️ Rainy','🌩️ Stormy','❄️ Snowy','🌫️ Misty','💨 Windy'];
+const MOOD_OPTIONS = ['🤩 Amazing','😊 Happy','🥾 On the Move','😴 Tired','😤 Tough','🌟 Magical','😌 Peaceful'];
+const DIFFICULTY_OPTIONS = ['Easy','Moderate','Challenging','Expert'];
+
+function getTrekPhoto(trek) {
+  const idx = COVER_GRADIENTS.indexOf(trek.coverGradient);
+  if (idx >= 0) return NATURE_PHOTOS[idx % NATURE_PHOTOS.length];
+  let h = 0; for (const c of (trek.name||'')) h = (h * 31 + c.charCodeAt(0)) & 0xFFFFFFFF;
+  return NATURE_PHOTOS[Math.abs(h) % NATURE_PHOTOS.length];
+}
+
+function generateId() { return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2,7); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// trek-ui.jsx — UI Components
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TD = {};
+
+TD.BackBtn = ({ onBack, label = '', light }) => (
+  <button onClick={onBack} style={{
+    background: light ? 'rgba(255,255,255,0.15)' : 'none',
+    border: light ? '1px solid rgba(255,255,255,0.2)' : 'none',
+    color: light ? '#FFF' : '#5B8A6E',
+    display: 'flex', alignItems: 'center', gap: 4,
+    fontSize: 14, fontFamily: 'inherit', cursor: 'pointer',
+    padding: light ? '6px 12px 6px 8px' : '4px 0',
+    borderRadius: light ? 20 : 0,
+    fontWeight: 600, backdropFilter: light ? 'blur(10px)' : 'none',
+    WebkitBackdropFilter: light ? 'blur(10px)' : 'none',
+  }}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    {label || 'Back'}
+  </button>
+);
+
+TD.Badge = ({ children, color = '#5B8A6E', bg = 'rgba(91,138,110,0.12)', small }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: 3,
+    background: bg, color, borderRadius: 20,
+    padding: small ? '2px 8px' : '4px 10px',
+    fontSize: small ? 11 : 12, fontWeight: 700, letterSpacing: '0.01em'
+  }}>{children}</span>
+);
+
+TD.DiffBadge = ({ diff }) => {
+  const map = {
+    'Easy':        { color: '#4A9B6E', bg: 'rgba(74,155,110,0.1)' },
+    'Moderate':    { color: '#C17F3E', bg: 'rgba(193,127,62,0.1)' },
+    'Challenging': { color: '#C4524A', bg: 'rgba(196,82,74,0.1)' },
+    'Expert':      { color: '#8B4FB8', bg: 'rgba(139,79,184,0.1)' },
+  };
+  const s = map[diff] || map['Moderate'];
+  return <TD.Badge color={s.color} bg={s.bg} small>{diff}</TD.Badge>;
+};
+
+TD.WeatherChip = ({ weather }) => (
+  <span style={{
+    background: '#F5F3EE', borderRadius: 12,
+    padding: '4px 10px', fontSize: 12, color: '#7A7570',
+    border: '1px solid #E8E5DE', fontWeight: 600
+  }}>{weather}</span>
+);
+
+TD.MoodChip = ({ mood }) => (
+  <span style={{
+    background: 'rgba(91,138,110,0.08)', borderRadius: 12,
+    padding: '4px 10px', fontSize: 12, color: '#5B8A6E',
+    border: '1px solid rgba(91,138,110,0.15)', fontWeight: 600
+  }}>{mood}</span>
+);
+
+TD.ElevBadge = ({ elev }) => (
+  <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, color: '#5B8A6E', fontWeight: 600 }}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 17 9 11 13 15 22 6"/></svg>
+    {elev?.toLocaleString()}m
+  </span>
+);
+
+TD.DistBadge = ({ dist }) => dist > 0 ? (
+  <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, color: '#9A9590', fontWeight: 600 }}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    +{dist} km
+  </span>
+) : null;
+
+TD.Section = ({ title, children, action, onAction }) => (
+  <div style={{ marginBottom: 22 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.10em', color: '#B0ADA6', textTransform: 'uppercase' }}>{title}</span>
+      {action && <button onClick={onAction} style={{ background: 'none', border: 'none', color: '#5B8A6E', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0 }}>{action}</button>}
+    </div>
+    {children}
+  </div>
+);
+
+TD.Card = ({ children, style: s }) => (
+  <div style={{ background: '#FFF', borderRadius: 20, padding: '14px 16px', boxShadow: '0 2px 14px rgba(0,0,0,0.06)', marginBottom: 10, ...s }}>
+    {children}
+  </div>
+);
+
+TD.Input = ({ label, value, onChange, placeholder, type = 'text', multiline, rows = 3 }) => (
+  <div style={{ marginBottom: 14 }}>
+    {label && <div style={{ fontSize: 11, fontWeight: 800, color: '#B0ADA6', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>}
+    {multiline
+      ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+          style={{ width: '100%', background: '#F7F5F0', border: '1.5px solid #E8E5DE', borderRadius: 14, color: '#1A1917', padding: '11px 14px', fontSize: 14, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none', fontWeight: 500 }}/>
+      : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+          style={{ width: '100%', background: '#F7F5F0', border: '1.5px solid #E8E5DE', borderRadius: 14, color: '#1A1917', padding: '11px 14px', fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', fontWeight: 500 }}/>
+    }
+  </div>
+);
+
+TD.Select = ({ label, value, onChange, options }) => (
+  <div style={{ marginBottom: 14 }}>
+    {label && <div style={{ fontSize: 11, fontWeight: 800, color: '#B0ADA6', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>}
+    <select value={value} onChange={e => onChange(e.target.value)}
+      style={{ width: '100%', background: '#F7F5F0', border: '1.5px solid #E8E5DE', borderRadius: 14, color: '#1A1917', padding: '11px 14px', fontSize: 14, fontFamily: 'inherit', appearance: 'none', outline: 'none', cursor: 'pointer', fontWeight: 500 }}>
+      {options.map(o => <option key={o} value={o}>{o}</option>)}
+    </select>
+  </div>
+);
+
+TD.ChipPicker = ({ label, options, value, onChange }) => (
+  <div style={{ marginBottom: 14 }}>
+    {label && <div style={{ fontSize: 11, fontWeight: 800, color: '#B0ADA6', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>{label}</div>}
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      {options.map(o => (
+        <button key={o} onClick={() => onChange(o)}
+          style={{
+            background: value === o ? 'rgba(91,138,110,0.12)' : '#F7F5F0',
+            border: value === o ? '1.5px solid rgba(91,138,110,0.4)' : '1.5px solid #E8E5DE',
+            borderRadius: 20, color: value === o ? '#5B8A6E' : '#9A9590',
+            padding: '5px 12px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700
+          }}>{o}</button>
+      ))}
+    </div>
+  </div>
+);
+
+TD.PrimaryBtn = ({ children, onClick, disabled, small, danger, style: extra }) => (
+  <button onClick={onClick} disabled={disabled}
+    style={{
+      background: danger ? 'rgba(196,82,74,0.08)' : (disabled ? '#E8E5DE' : '#5B8A6E'),
+      color: danger ? '#C4524A' : (disabled ? '#B0ADA6' : '#FFF'),
+      border: danger ? '1.5px solid rgba(196,82,74,0.2)' : 'none',
+      borderRadius: 16, padding: small ? '8px 18px' : '14px 20px',
+      fontSize: small ? 13 : 15, fontWeight: 800, fontFamily: 'inherit',
+      cursor: disabled ? 'default' : 'pointer', width: small ? 'auto' : '100%',
+      letterSpacing: '0.01em', boxShadow: disabled || danger ? 'none' : '0 4px 14px rgba(91,138,110,0.3)',
+      ...extra
+    }}>{children}</button>
+);
+
+TD.GhostBtn = ({ children, onClick, small }) => (
+  <button onClick={onClick}
+    style={{ background: '#F7F5F0', border: '1.5px solid #E8E5DE', color: '#7A7570', borderRadius: 14, padding: small ? '7px 14px' : '11px 20px', fontSize: small ? 13 : 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', width: small ? 'auto' : '100%' }}>
+    {children}
+  </button>
+);
+
+TD.StopTimeline = ({ stops, onStopClick }) => (
+  <div style={{ position: 'relative', paddingLeft: 28 }}>
+    <div style={{ position: 'absolute', left: 10, top: 16, bottom: 16, width: 2, background: 'linear-gradient(to bottom, #5B8A6E44, #C17F3E22)', borderRadius: 2 }}/>
+    {stops.map((stop, i) => (
+      <div key={stop.id} onClick={() => onStopClick(stop)}
+        style={{ position: 'relative', marginBottom: 10, cursor: 'pointer' }}>
+        <div style={{ position: 'absolute', left: -22, top: 12, width: 10, height: 10, borderRadius: '50%', background: i === 0 ? '#5B8A6E' : '#C17F3E', border: '2px solid #F2F0EB', zIndex: 1 }}/>
+        <div style={{ background: '#FFF', border: '1px solid #F0EDE6', borderRadius: 16, padding: '11px 14px', boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}>
+          <div style={{ fontWeight: 800, fontSize: 14, color: '#1A1917', marginBottom: 5 }}>{stop.name}</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <TD.ElevBadge elev={stop.elevation}/>
+            <TD.DistBadge dist={stop.distance}/>
+            {stop.weather && <TD.WeatherChip weather={stop.weather}/>}
+          </div>
+          {stop.notes && <div style={{ fontSize: 12, color: '#9A9590', marginTop: 6, lineHeight: 1.55, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{stop.notes}</div>}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+TD.EmptyState = ({ icon, title, subtitle, action, onAction }) => (
+  <div style={{ textAlign: 'center', padding: '32px 20px' }}>
+    <div style={{ fontSize: 40, marginBottom: 12 }}>{icon}</div>
+    <div style={{ fontSize: 15, fontWeight: 800, color: '#7A7570', marginBottom: 6 }}>{title}</div>
+    <div style={{ fontSize: 13, color: '#B0ADA6', marginBottom: 18, lineHeight: 1.55 }}>{subtitle}</div>
+    {action && <TD.PrimaryBtn onClick={onAction} small style={{ margin: '0 auto' }}>{action}</TD.PrimaryBtn>}
+  </div>
+);
+
+TD.PhotoGrid = ({ photos, onAdd }) => {
+  const fileRef = React.useRef();
+  const handleFile = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => onAdd(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 8 }}>
+        {photos.map((p, i) => (
+          <div key={i} style={{ aspectRatio: '1', borderRadius: 12, overflow: 'hidden', background: '#F2F0EB' }}>
+            <img src={p} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt=""/>
+          </div>
+        ))}
+        <button onClick={() => fileRef.current.click()}
+          style={{ aspectRatio: '1', borderRadius: 12, background: '#F7F5F0', border: '1.5px dashed #D5D1CA', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 4, color: '#B0ADA6' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span style={{ fontSize: 10, fontWeight: 700 }}>Add</span>
+        </button>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile}/>
+    </div>
+  );
+};
+
+TD.Spinner = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+    <div style={{ width: 22, height: 22, border: '2.5px solid #E8E5DE', borderTopColor: '#5B8A6E', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/>
+  </div>
+);
+
+TD.Stat = ({ label, value, sub }) => (
+  <div style={{ textAlign: 'center', flex: 1 }}>
+    <div style={{ fontSize: 22, fontWeight: 900, color: '#1A1917', letterSpacing: '-0.03em' }}>{value}</div>
+    {sub && <div style={{ fontSize: 10, color: '#5B8A6E', fontWeight: 800, letterSpacing: '0.04em' }}>{sub}</div>}
+    <div style={{ fontSize: 10, color: '#B0ADA6', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>{label}</div>
+  </div>
+);
+
+TD.ElevChart = ({ stops }) => {
+  if (!stops || stops.length < 2) return null;
+  const elevs = stops.map(s => s.elevation);
+  const min = Math.min(...elevs), max = Math.max(...elevs);
+  const W = 280, H = 60;
+  const pts = elevs.map((e, i) => {
+    const x = (i / (elevs.length - 1)) * W;
+    const y = H - ((e - min) / (max - min || 1)) * (H - 10) - 5;
+    return `${x},${y}`;
+  }).join(' ');
+  const fillPts = `0,${H} ${pts} ${W},${H}`;
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="elevGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#5B8A6E" stopOpacity="0.25"/>
+          <stop offset="100%" stopColor="#5B8A6E" stopOpacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <polygon points={fillPts} fill="url(#elevGrad)"/>
+      <polyline points={pts} fill="none" stroke="#5B8A6E" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+    </svg>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// trek-screens.jsx — Screens
+// ─────────────────────────────────────────────────────────────────────────────
+
+const GLASS = {
+  background: 'rgba(15,15,15,0.45)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.12)',
+};
+const GLASS_LIGHT = {
+  background: 'rgba(255,255,255,0.14)',
+  backdropFilter: 'blur(18px)',
+  WebkitBackdropFilter: 'blur(18px)',
+  border: '1px solid rgba(255,255,255,0.18)',
+};
+const LIGHT_BG = '#F2F0EB';
+
+function HomeScreen({ treks, onSelectTrek, onCreateTrek }) {
+  const totalStops = treks.reduce((a,t) => a + t.days.reduce((b,d) => b + d.stops.length, 0), 0);
+
+  return (
+    <div style={{ height:'100%', position:'relative', overflow:'hidden', background:'#0D1A0D' }}>
+      <div style={{ position:'absolute', inset:0, backgroundImage:`url(${HOME_HERO})`, backgroundSize:'cover', backgroundPosition:'center 30%' }}>
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 35%, rgba(15,22,12,0.97) 68%)' }}/>
+      </div>
+
+      <div style={{ position:'relative', zIndex:1, padding:'0 22px', display:'flex', flexDirection:'column', justifyContent:'flex-end', height:'42%', paddingBottom:24 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10 }}>
+          <span style={{ width:5, height:5, borderRadius:'50%', background:'#7EC8A0', display:'inline-block' }}/>
+          <span style={{ fontSize:10, fontWeight:500, color:'rgba(255,255,255,0.45)', letterSpacing:'0.16em', textTransform:'uppercase' }}>Trek Diary</span>
+        </div>
+        <h1 style={{ fontSize:46, fontWeight:800, color:'#FFF', margin:'0 0 6px', fontFamily:"'Poppins', sans-serif", letterSpacing:'-0.02em', lineHeight:1.05 }}>Trek<br/>Diary</h1>
+        <p style={{ fontSize:13, color:'rgba(255,255,255,0.45)', fontWeight:400, margin:0 }}>{treks.length} treks · {totalStops} stops recorded</p>
+      </div>
+
+      <div style={{ position:'absolute', left:0, right:0, bottom:0, top:'42%', background:LIGHT_BG, borderRadius:'24px 24px 0 0', overflowY:'auto', padding:'20px 18px 100px' }}>
+        {treks.length > 0 && (
+          <div style={{ background:'#FFF', borderRadius:18, padding:'14px 16px', display:'flex', marginBottom:22, boxShadow:'0 2px 14px rgba(0,0,0,0.06)' }}>
+            <TD.Stat label="Treks" value={treks.length}/>
+            <div style={{ width:1, background:'#F0EDE6' }}/>
+            <TD.Stat label="Stops" value={totalStops}/>
+            <div style={{ width:1, background:'#F0EDE6' }}/>
+            <TD.Stat label="Done" value={treks.filter(t=>t.completed).length}/>
+          </div>
+        )}
+
+        <TD.Section title="My Treks" action="+ New" onAction={onCreateTrek}>
+          {treks.length === 0
+            ? <TD.EmptyState icon="🏔️" title="No treks yet" subtitle="Start your first adventure" action="Create Trek" onAction={onCreateTrek}/>
+            : treks.map(trek => <TrekCard key={trek.id} trek={trek} onClick={() => onSelectTrek(trek)}/>)
+          }
+        </TD.Section>
+      </div>
+
+      <button onClick={onCreateTrek} style={{ position:'absolute', top:22, right:20, zIndex:10, width:42, height:42, borderRadius:14, background:'rgba(255,255,255,0.18)', backdropFilter:'blur(18px)', WebkitBackdropFilter:'blur(18px)', border:'1px solid rgba(255,255,255,0.25)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+  );
+}
+
+function TrekCard({ trek, onClick }) {
+  const stopsCount = trek.days.reduce((a,d) => a + d.stops.length, 0);
+  const daysLogged = trek.days.filter(d=>d.stops.length>0).length;
+  const progress = trek.totalDays > 0 ? daysLogged / trek.totalDays : 0;
+  const photo = getTrekPhoto(trek);
+
+  return (
+    <div onClick={onClick} style={{ borderRadius:20, overflow:'hidden', marginBottom:14, cursor:'pointer', boxShadow:'0 4px 20px rgba(0,0,0,0.12)', position:'relative', height:140 }}>
+      <div style={{ position:'absolute', inset:0, backgroundImage:`url(${photo})`, backgroundSize:'cover', backgroundPosition:'center' }}>
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 100%)' }}/>
+      </div>
+      <div style={{ position:'relative', zIndex:1, padding:'14px 16px', height:'100%', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:700, color:'#FFF', fontFamily:"'Poppins', sans-serif", letterSpacing:'0.01em', lineHeight:1.2 }}>{trek.name}</div>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,0.55)', marginTop:2, fontWeight:500 }}>{trek.region}</div>
+          </div>
+          <div style={{ display:'flex', gap:5, flexDirection:'column', alignItems:'flex-end' }}>
+            <TD.DiffBadge diff={trek.difficulty}/>
+            {trek.completed && <TD.Badge color="#7EC8A0" bg="rgba(126,200,160,0.2)" small>✓ Done</TD.Badge>}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+            <span style={{ fontSize:11, color:'rgba(255,255,255,0.5)', fontWeight:600 }}>{trek.totalDays} days · {stopsCount} stops</span>
+            <span style={{ fontSize:11, color:'rgba(255,255,255,0.5)', fontWeight:600 }}>{daysLogged}/{trek.totalDays}</span>
+          </div>
+          <div style={{ height:3, background:'rgba(255,255,255,0.15)', borderRadius:3 }}>
+            <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#7EC8A0,#A8E6C0)', width:`${progress*100}%` }}/>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreateTrekScreen({ onBack, onCreated }) {
+  const [name, setName] = React.useState('');
+  const [region, setRegion] = React.useState('');
+  const [desc, setDesc] = React.useState('');
+  const [days, setDays] = React.useState(3);
+  const [diff, setDiff] = React.useState('Moderate');
+  const [gradIdx, setGradIdx] = React.useState(0);
+  const [fetching, setFetching] = React.useState(false);
+  const [fetched, setFetched] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  const previewPhoto = NATURE_PHOTOS[gradIdx % NATURE_PHOTOS.length];
+
+  const fetchDetails = async () => {
+    if (!name.trim()) return;
+    setFetching(true); setError(''); setFetched(false);
+    try {
+      if (!window.claude) throw new Error('Claude not available');
+      const res = await window.claude.complete({
+        messages:[{ role:'user', content:`You are a trekking guide database. Given the trek name "${name}", return ONLY valid JSON (no markdown):
+{"region":"Region, Country","difficulty":"Easy|Moderate|Challenging|Expert","suggestedDays":number,"description":"2-sentence description","stops":[{"day":1,"name":"Stop Name","elevation":1234,"distanceKm":5,"weather":"☀️ Sunny","notes":"Short vivid note"}]}
+Include 4-7 realistic stops. If unknown, make sensible suggestions.` }]
+      });
+      const json = JSON.parse(res.replace(/```json|```/g,'').trim());
+      if (json.region) setRegion(json.region);
+      if (json.difficulty) setDiff(json.difficulty);
+      if (json.suggestedDays) setDays(json.suggestedDays);
+      if (json.description) setDesc(json.description);
+      if (json.stops) window._fetchedStops = json.stops;
+      setFetched(true);
+    } catch(e) { setError('AI fetch unavailable — fill in manually below.'); }
+    setFetching(false);
+  };
+
+  const handleCreate = () => {
+    if (!name.trim()) return;
+    const dayArr = Array.from({length:days},(_,i) => {
+      const fetchedForDay = (window._fetchedStops||[]).filter(s=>s.day===i+1);
+      return { dayNum:i+1, title:`Day ${i+1}`, stops: fetchedForDay.map(s=>({ id:generateId(), name:s.name, elevation:s.elevation||0, distance:s.distanceKm||0, weather:s.weather||'☀️ Sunny', mood:'😊 Happy', notes:s.notes||'', photos:[] })) };
+    });
+    const trek = { id:generateId(), name:name.trim(), region, difficulty:diff, totalDays:days, coverGradient:COVER_GRADIENTS[gradIdx], description:desc, days:dayArr, createdAt:new Date().toISOString().split('T')[0], completed:false };
+    TrekData.addTrek(trek);
+    window._fetchedStops = null;
+    onCreated(TrekData.getAll(), trek);
+  };
+
+  return (
+    <div style={{ height:'100%', position:'relative', overflow:'hidden', background:'#0D1A0D' }}>
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:180, backgroundImage:`url(${previewPhoto})`, backgroundSize:'cover', backgroundPosition:'center' }}>
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(13,26,13,1) 100%)' }}/>
+      </div>
+      <div style={{ position:'relative', zIndex:1, padding:'18px 20px 0', marginBottom:8 }}>
+        <TD.BackBtn onBack={onBack} light/>
+        <h2 style={{ fontSize:30, fontWeight:700, color:'#FFF', margin:'8px 0 2px', fontFamily:"'Poppins', sans-serif" }}>New Trek</h2>
+        <p style={{ fontSize:12, color:'rgba(255,255,255,0.4)', margin:0, fontWeight:500 }}>Search to auto-fill with AI ✦</p>
+      </div>
+
+      <div style={{ position:'absolute', left:0, right:0, bottom:0, top:140, background:LIGHT_BG, borderRadius:'22px 22px 0 0', overflowY:'auto', padding:'20px 18px 100px' }}>
+        <div style={{ background:'#FFF', borderRadius:18, padding:'16px', marginBottom:16, boxShadow:'0 2px 14px rgba(0,0,0,0.07)', border:'1.5px solid rgba(91,138,110,0.18)' }}>
+          <div style={{ fontSize:10, fontWeight:800, color:'#5B8A6E', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:10 }}>Trek Name · AI Auto-fill</div>
+          <div style={{ display:'flex', gap:8 }}>
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Roopkund Trek, Everest Base Camp…"
+              onKeyDown={e=>e.key==='Enter'&&fetchDetails()}
+              style={{ flex:1, background:'#F7F5F0', border:'1.5px solid #E8E5DE', borderRadius:12, color:'#1A1917', padding:'10px 12px', fontSize:14, fontFamily:'inherit', outline:'none', fontWeight:500 }}/>
+            <button onClick={fetchDetails} disabled={!name.trim()||fetching}
+              style={{ background:name.trim()&&!fetching?'#5B8A6E':'#E8E5DE', border:'none', borderRadius:12, color:name.trim()&&!fetching?'#FFF':'#B0ADA6', padding:'0 14px', fontSize:13, fontWeight:800, cursor:name.trim()&&!fetching?'pointer':'default', whiteSpace:'nowrap', fontFamily:'inherit' }}>
+              {fetching?'…':'✦ Fetch'}
+            </button>
+          </div>
+          {fetching && <><TD.Spinner/><div style={{ textAlign:'center', fontSize:12, color:'#B0ADA6', marginTop:2 }}>Fetching trek details…</div></>}
+          {fetched && <div style={{ marginTop:8, fontSize:12, color:'#5B8A6E', fontWeight:700 }}>✓ Details loaded — review below</div>}
+          {error && <div style={{ marginTop:8, fontSize:12, color:'#C4524A', fontWeight:600 }}>{error}</div>}
+        </div>
+
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:10, fontWeight:800, color:'#B0ADA6', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:8 }}>Cover Photo</div>
+          <div style={{ display:'flex', gap:8 }}>
+            {NATURE_PHOTOS.map((p,i) => (
+              <div key={i} onClick={()=>setGradIdx(i)}
+                style={{ width:44, height:44, borderRadius:12, backgroundImage:`url(${p})`, backgroundSize:'cover', backgroundPosition:'center', cursor:'pointer', border:gradIdx===i?'2.5px solid #5B8A6E':'2.5px solid transparent', flexShrink:0 }}/>
+            ))}
+          </div>
+        </div>
+
+        <TD.Input label="Region" value={region} onChange={setRegion} placeholder="e.g. Uttarakhand, India"/>
+        <TD.Input label="Description" value={desc} onChange={setDesc} placeholder="A brief description…" multiline rows={2}/>
+        <TD.Select label="Difficulty" value={diff} onChange={setDiff} options={DIFFICULTY_OPTIONS}/>
+
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:10, fontWeight:800, color:'#B0ADA6', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Number of Days</div>
+          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            <button onClick={()=>setDays(Math.max(1,days-1))} style={{ width:38,height:38,borderRadius:12,background:'#F7F5F0',border:'1.5px solid #E8E5DE',color:'#1A1917',fontSize:20,cursor:'pointer',fontWeight:700 }}>−</button>
+            <div style={{ fontSize:34, fontWeight:700, color:'#5B8A6E', minWidth:44, textAlign:'center', fontFamily:"'Poppins', sans-serif" }}>{days}</div>
+            <button onClick={()=>setDays(Math.min(30,days+1))} style={{ width:38,height:38,borderRadius:12,background:'#F7F5F0',border:'1.5px solid #E8E5DE',color:'#1A1917',fontSize:20,cursor:'pointer',fontWeight:700 }}>+</button>
+            <div style={{ fontSize:13, color:'#B0ADA6', fontWeight:600 }}>days planned</div>
+          </div>
+        </div>
+
+        <TD.PrimaryBtn onClick={handleCreate} disabled={!name.trim()}>Start Trek →</TD.PrimaryBtn>
+      </div>
+    </div>
+  );
+}
+
+function TrekDetailScreen({ trek, onBack, onSelectStop, onAddStop, onViewSummary, onViewPath, onTrekUpdate }) {
+  const [activeDay, setActiveDay] = React.useState(trek.days[0]?.dayNum || 1);
+  const day = trek.days.find(d=>d.dayNum===activeDay) || trek.days[0];
+  const photo = getTrekPhoto(trek);
+
+  const toggleComplete = () => { onTrekUpdate(TrekData.updateTrek(trek.id, { completed: !trek.completed })); };
+
+  return (
+    <div style={{ height:'100%', display:'flex', flexDirection:'column', background:'#0D1A0D' }}>
+      <div style={{ position:'relative', flexShrink:0, height:160 }}>
+        <div style={{ position:'absolute', inset:0, backgroundImage:`url(${photo})`, backgroundSize:'cover', backgroundPosition:'center' }}>
+          <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(13,26,13,0.98) 100%)' }}/>
+        </div>
+        <div style={{ position:'relative', zIndex:1, padding:'14px 18px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+            <TD.BackBtn onBack={onBack} light/>
+            <div style={{ display:'flex', gap:6 }}>
+              <button onClick={onViewPath} style={{ ...GLASS_LIGHT, border:'1px solid rgba(255,255,255,0.2)', borderRadius:10, color:'#FFF', padding:'5px 11px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>Path</button>
+              <button onClick={onViewSummary} style={{ ...GLASS_LIGHT, border:'1px solid rgba(255,255,255,0.2)', borderRadius:10, color:'#FFF', padding:'5px 11px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>Stats</button>
+              <button onClick={toggleComplete} style={{ background:trek.completed?'rgba(126,200,160,0.25)':GLASS_LIGHT.background, backdropFilter:GLASS_LIGHT.backdropFilter, border:trek.completed?'1px solid rgba(126,200,160,0.4)':'1px solid rgba(255,255,255,0.2)', borderRadius:10, color:trek.completed?'#7EC8A0':'#FFF', padding:'5px 11px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                {trek.completed?'✓ Done':'Mark Done'}
+              </button>
+            </div>
+          </div>
+          <h2 style={{ fontSize:22, fontWeight:700, color:'#FFF', margin:'0 0 3px', fontFamily:"'Poppins', sans-serif" }}>{trek.name}</h2>
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+            <span style={{ fontSize:11, color:'rgba(255,255,255,0.45)', fontWeight:500 }}>{trek.region}</span>
+            <TD.DiffBadge diff={trek.difficulty}/>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flex:1, background:LIGHT_BG, borderRadius:'20px 20px 0 0', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div style={{ background:'#FFF', borderBottom:'1px solid #F0EDE6', flexShrink:0, boxShadow:'0 1px 6px rgba(0,0,0,0.04)' }}>
+          <div style={{ display:'flex', overflowX:'auto', padding:'8px 14px', gap:6, scrollbarWidth:'none' }}>
+            {trek.days.map(d => (
+              <button key={d.dayNum} onClick={()=>setActiveDay(d.dayNum)}
+                style={{ flexShrink:0, padding:'6px 14px', borderRadius:20, border:'none', fontFamily:'inherit', fontSize:12, fontWeight:800, cursor:'pointer',
+                  background:activeDay===d.dayNum?'#5B8A6E':'#F7F5F0',
+                  color:activeDay===d.dayNum?'#FFF':'#9A9590',
+                  boxShadow:activeDay===d.dayNum?'0 2px 8px rgba(91,138,110,0.3)':'none' }}>
+                Day {d.dayNum}{d.stops.length>0?` · ${d.stops.length}`:''}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ flex:1, overflowY:'auto', padding:'16px 18px' }}>
+          {day && <>
+            <div style={{ fontSize:12, fontWeight:700, color:'#B0ADA6', marginBottom:14 }}>
+              Day {day.dayNum} — <span style={{ color:'#1A1917' }}>{day.title}</span>
+            </div>
+            {day.stops.length===0
+              ? <TD.EmptyState icon="📍" title="No stops yet" subtitle="Add your first stop for this day" action="Add Stop" onAction={()=>onAddStop(day.dayNum)}/>
+              : <TD.StopTimeline stops={day.stops} onStopClick={s=>onSelectStop(s,day.dayNum)}/>
+            }
+          </>}
+          <div style={{ marginTop:16 }}><TD.PrimaryBtn onClick={()=>onAddStop(day?.dayNum||1)}>+ Add Stop to Day {activeDay}</TD.PrimaryBtn></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StopDetailScreen({ stop, trekId, dayNum, onBack, onSave }) {
+  const [notes, setNotes] = React.useState(stop.notes||'');
+  const [weather, setWeather] = React.useState(stop.weather||'☀️ Sunny');
+  const [mood, setMood] = React.useState(stop.mood||'😊 Happy');
+  const [photos, setPhotos] = React.useState(stop.photos||[]);
+  const [saved, setSaved] = React.useState(false);
+
+  const handleSave = () => {
+    const treks = TrekData.updateStop(trekId, dayNum, stop.id, { notes, weather, mood, photos });
+    setSaved(true); setTimeout(()=>setSaved(false), 1500); onSave(treks);
+  };
+
+  return (
+    <div style={{ height:'100%', overflowY:'auto', background:LIGHT_BG, padding:'20px 18px 100px' }}>
+      <div style={{ marginBottom:18 }}>
+        <TD.BackBtn onBack={onBack}/>
+        <h2 style={{ fontSize:28, fontWeight:700, color:'#1A1917', margin:'10px 0 6px', fontFamily:"'Poppins', sans-serif", letterSpacing:'0.01em' }}>{stop.name}</h2>
+        <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+          <TD.ElevBadge elev={stop.elevation}/>
+          <TD.DistBadge dist={stop.distance}/>
+        </div>
+      </div>
+      <TD.Section title="Weather & Mood">
+        <TD.ChipPicker options={WEATHER_OPTIONS} value={weather} onChange={setWeather}/>
+        <TD.ChipPicker options={MOOD_OPTIONS} value={mood} onChange={setMood}/>
+      </TD.Section>
+      <TD.Section title="Memory">
+        <TD.Input value={notes} onChange={setNotes} placeholder="What happened here? Describe the view, feelings, smells…" multiline rows={5}/>
+      </TD.Section>
+      <TD.Section title="Photos">
+        <TD.PhotoGrid photos={photos} onAdd={p=>setPhotos([...photos,p])}/>
+      </TD.Section>
+      <div style={{ background:'#FFF', borderRadius:16, padding:'13px 15px', marginBottom:18, boxShadow:'0 1px 8px rgba(0,0,0,0.05)' }}>
+        <div style={{ fontSize:10, color:'#B0ADA6', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.1em', fontWeight:800 }}>Voice Memo</div>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ width:38,height:38,borderRadius:'50%',background:'rgba(91,138,110,0.1)',border:'1.5px solid rgba(91,138,110,0.2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B8A6E" strokeWidth="2.2" strokeLinecap="round"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+          <div style={{ fontSize:13, color:'#B0ADA6', fontWeight:600 }}>Tap to record a voice memo</div>
+        </div>
+      </div>
+      <TD.PrimaryBtn onClick={handleSave}>{saved?'✓ Saved!':'Save Changes'}</TD.PrimaryBtn>
+    </div>
+  );
+}
+
+function AddStopScreen({ trekId, dayNum, onBack, onAdded }) {
+  const [name, setName] = React.useState('');
+  const [elev, setElev] = React.useState('');
+  const [dist, setDist] = React.useState('');
+  const [weather, setWeather] = React.useState('☀️ Sunny');
+  const [mood, setMood] = React.useState('😊 Happy');
+  const [notes, setNotes] = React.useState('');
+
+  const handleAdd = () => {
+    if (!name.trim()) return;
+    const stop = { id:generateId(), name:name.trim(), elevation:parseInt(elev)||0, distance:parseFloat(dist)||0, weather, mood, notes, photos:[] };
+    const treks = TrekData.addStop(trekId, dayNum, stop);
+    onAdded(treks);
+  };
+
+  return (
+    <div style={{ height:'100%', overflowY:'auto', background:LIGHT_BG, padding:'20px 18px 100px' }}>
+      <div style={{ marginBottom:20 }}>
+        <TD.BackBtn onBack={onBack}/>
+        <h2 style={{ fontSize:28, fontWeight:700, color:'#1A1917', margin:'10px 0 2px', fontFamily:"'Poppins', sans-serif" }}>Add Stop</h2>
+        <div style={{ fontSize:12, color:'#B0ADA6', fontWeight:600 }}>Day {dayNum}</div>
+      </div>
+      <TD.Input label="Location Name" value={name} onChange={setName} placeholder="e.g. Roopkund Lake, Base Camp…"/>
+      <div style={{ display:'flex', gap:10 }}>
+        <div style={{ flex:1 }}><TD.Input label="Elevation (m)" value={elev} onChange={setElev} placeholder="3500" type="number"/></div>
+        <div style={{ flex:1 }}><TD.Input label="Distance (km)" value={dist} onChange={setDist} placeholder="6.5" type="number"/></div>
+      </div>
+      <TD.ChipPicker label="Weather" options={WEATHER_OPTIONS} value={weather} onChange={setWeather}/>
+      <TD.ChipPicker label="Mood" options={MOOD_OPTIONS} value={mood} onChange={setMood}/>
+      <TD.Input label="Notes" value={notes} onChange={setNotes} placeholder="Describe this stop…" multiline rows={3}/>
+      <TD.PrimaryBtn onClick={handleAdd} disabled={!name.trim()}>Add Stop →</TD.PrimaryBtn>
+    </div>
+  );
+}
+
+function SummaryScreen({ trek, onBack }) {
+  const allStops = trek.days.flatMap(d=>d.stops);
+  const totalDist = allStops.reduce((a,s)=>a+s.distance,0);
+  const maxElev = allStops.length?Math.max(...allStops.map(s=>s.elevation)):0;
+  const daysLogged = trek.days.filter(d=>d.stops.length>0).length;
+  const photoCount = allStops.reduce((a,s)=>a+s.photos.length,0);
+  const photo = getTrekPhoto(trek);
+
+  return (
+    <div style={{ height:'100%', overflow:'hidden', display:'flex', flexDirection:'column', background:'#0D1A0D' }}>
+      <div style={{ position:'relative', flexShrink:0, height:150 }}>
+        <div style={{ position:'absolute', inset:0, backgroundImage:`url(${photo})`, backgroundSize:'cover', backgroundPosition:'center' }}>
+          <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(13,26,13,0.98) 100%)' }}/>
+        </div>
+        <div style={{ position:'relative', zIndex:1, padding:'14px 18px' }}>
+          <TD.BackBtn onBack={onBack} light/>
+          <h2 style={{ fontSize:22, fontWeight:700, color:'#FFF', margin:'8px 0 2px', fontFamily:"'Poppins', sans-serif" }}>{trek.name}</h2>
+          <div style={{ fontSize:11, color:'rgba(255,255,255,0.45)', fontWeight:500 }}>Trek Summary</div>
+        </div>
+      </div>
+
+      <div style={{ flex:1, background:LIGHT_BG, borderRadius:'20px 20px 0 0', overflowY:'auto', padding:'20px 18px 100px' }}>
+        <div style={{ background:'#FFF', borderRadius:20, padding:'16px', display:'flex', marginBottom:12, boxShadow:'0 2px 14px rgba(0,0,0,0.06)' }}>
+          <TD.Stat label="Distance" value={totalDist.toFixed(1)} sub="km"/>
+          <div style={{ width:1, background:'#F0EDE6' }}/>
+          <TD.Stat label="Max Elev" value={maxElev.toLocaleString()} sub="m"/>
+          <div style={{ width:1, background:'#F0EDE6' }}/>
+          <TD.Stat label="Photos" value={photoCount}/>
+        </div>
+        <div style={{ background:'#FFF', borderRadius:20, padding:'16px', display:'flex', marginBottom:20, boxShadow:'0 2px 14px rgba(0,0,0,0.06)' }}>
+          <TD.Stat label="Days" value={`${daysLogged}/${trek.totalDays}`}/>
+          <div style={{ width:1, background:'#F0EDE6' }}/>
+          <TD.Stat label="Stops" value={allStops.length}/>
+          <div style={{ width:1, background:'#F0EDE6' }}/>
+          <TD.Stat label="Difficulty" value={trek.difficulty.slice(0,3)}/>
+        </div>
+        {allStops.length>=2 && (
+          <TD.Section title="Elevation Profile">
+            <div style={{ background:'#FFF', borderRadius:16, padding:'14px', boxShadow:'0 1px 8px rgba(0,0,0,0.05)' }}>
+              <TD.ElevChart stops={allStops}/>
+              <div style={{ display:'flex', justifyContent:'space-between', marginTop:6 }}>
+                <span style={{ fontSize:10, color:'#B0ADA6', fontWeight:600 }}>{allStops[0]?.name}</span>
+                <span style={{ fontSize:10, color:'#B0ADA6', fontWeight:600 }}>{allStops[allStops.length-1]?.name}</span>
+              </div>
+            </div>
+          </TD.Section>
+        )}
+        <TD.Section title="Day Breakdown">
+          {trek.days.map(d => (
+            <div key={d.dayNum} style={{ background:'#FFF', borderRadius:14, padding:'12px 14px', marginBottom:8, boxShadow:'0 1px 6px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div><span style={{ fontSize:11, fontWeight:800, color:'#5B8A6E', marginRight:8 }}>Day {d.dayNum}</span><span style={{ fontSize:13, color:'#1A1917', fontWeight:600 }}>{d.title}</span></div>
+              <TD.Badge small color={d.stops.length?'#4A9B6E':'#B0ADA6'} bg={d.stops.length?'rgba(74,155,110,0.1)':'rgba(176,173,166,0.1)'}>{d.stops.length} stops</TD.Badge>
+            </div>
+          ))}
+        </TD.Section>
+        {trek.description && (
+          <TD.Section title="About">
+            <div style={{ background:'#FFF', borderRadius:16, padding:'14px', boxShadow:'0 1px 6px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize:14, color:'#7A7570', lineHeight:1.65, fontWeight:500 }}>{trek.description}</div>
+            </div>
+          </TD.Section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TrekPathScreen({ trek, onBack, onSelectDay }) {
+  const photo = getTrekPhoto(trek);
+  const daysLogged = trek.days.filter(d => d.stops.length > 0).length;
+  const pct = Math.round((daysLogged / trek.totalDays) * 100);
+
+  const COLS = [1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2, 1, 0, 1, 2];
+  const NODE_SIZE = 62;
+  const ROW_H = 100;
+  const W = 280;
+  const colX = [36, W / 2 - NODE_SIZE / 2, W - 36 - NODE_SIZE];
+
+  const getStatus = (dayIdx) => {
+    const day = trek.days[dayIdx];
+    if (!day) return 'locked';
+    if (day.stops.length > 0) return 'done';
+    if (dayIdx === daysLogged) return 'current';
+    return 'locked';
+  };
+
+  const nodeColor = {
+    done:    { bg: '#5B8A6E', shadow: 'rgba(91,138,110,0.45)' },
+    current: { bg: '#C8A040', shadow: 'rgba(200,160,64,0.45)' },
+    locked:  { bg: '#E8E5DE', shadow: 'rgba(0,0,0,0.06)' },
+  };
+
+  const buildPath = (fromCol, toCol, rowIdx) => {
+    const x1 = colX[fromCol] + NODE_SIZE / 2;
+    const y1 = rowIdx * ROW_H + NODE_SIZE;
+    const x2 = colX[toCol] + NODE_SIZE / 2;
+    const y2 = (rowIdx + 1) * ROW_H;
+    return `M ${x1} ${y1} C ${x1} ${y1 + 30}, ${x2} ${y2 - 30}, ${x2} ${y2}`;
+  };
+
+  const totalH = trek.totalDays * ROW_H + 40;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0D1A0D' }}>
+      <div style={{ position: 'relative', flexShrink: 0, height: 150 }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${photo})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(13,26,13,0.98) 100%)' }}/>
+        </div>
+        <div style={{ position: 'relative', zIndex: 1, padding: '14px 18px' }}>
+          <TD.BackBtn onBack={onBack} light/>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 }}>
+            <div>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#FFF', margin: '0 0 2px', fontFamily: "'Poppins', sans-serif" }}>{trek.name}</h2>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>{daysLogged} of {trek.totalDays} days completed</div>
+            </div>
+            <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+              <svg width="52" height="52" viewBox="0 0 52 52">
+                <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="4"/>
+                <circle cx="26" cy="26" r="22" fill="none" stroke="#7EC8A0" strokeWidth="4"
+                  strokeDasharray={`${2 * Math.PI * 22}`}
+                  strokeDashoffset={`${2 * Math.PI * 22 * (1 - pct / 100)}`}
+                  strokeLinecap="round" transform="rotate(-90 26 26)"/>
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#FFF' }}>{pct}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, background: '#F5F3EF', borderRadius: '22px 22px 0 0', overflowY: 'auto', position: 'relative' }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, #C8C5BE 1px, transparent 1px)', backgroundSize: '22px 22px', opacity: 0.45, pointerEvents: 'none' }}/>
+
+        <div style={{ position: 'relative', padding: '24px 0 40px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ position: 'relative', width: W, height: totalH }}>
+            <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}>
+              {trek.days.map((_, i) => {
+                if (i >= trek.totalDays - 1) return null;
+                const fromCol = COLS[i % COLS.length];
+                const toCol = COLS[(i + 1) % COLS.length];
+                const status = getStatus(i);
+                const strokeColor = status === 'done' ? '#7EC8A0' : status === 'current' ? '#E8C060' : '#D5D1CA';
+                return (
+                  <path key={i} d={buildPath(fromCol, toCol, i)}
+                    fill="none" stroke={strokeColor} strokeWidth="4"
+                    strokeLinecap="round" strokeLinejoin="round"/>
+                );
+              })}
+            </svg>
+
+            {trek.days.map((day, i) => {
+              const col = COLS[i % COLS.length];
+              const x = colX[col];
+              const y = i * ROW_H;
+              const status = getStatus(i);
+              const nc = nodeColor[status];
+              const isClickable = status !== 'locked';
+
+              return (
+                <div key={i} onClick={() => isClickable && onSelectDay(day.dayNum)}
+                  style={{ position: 'absolute', left: x, top: y, width: NODE_SIZE, height: NODE_SIZE, cursor: isClickable ? 'pointer' : 'default' }}>
+                  {status === 'current' && (
+                    <div style={{ position: 'absolute', inset: -6, borderRadius: 22, border: '2.5px solid rgba(200,160,64,0.35)', animation: 'pulse 2s infinite' }}/>
+                  )}
+                  <div style={{
+                    width: '100%', height: '100%', borderRadius: 18,
+                    background: nc.bg,
+                    boxShadow: `0 8px 24px ${nc.shadow}, 0 2px 6px rgba(0,0,0,0.1)`,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                    border: status === 'locked' ? '2px solid #E0DDD8' : 'none',
+                    transform: status === 'current' ? 'scale(1.08)' : 'scale(1)',
+                    transition: 'transform 0.15s',
+                  }}>
+                    <div style={{ fontSize: status === 'locked' ? 16 : 20, lineHeight: 1 }}>
+                      {status === 'done' ? (
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      ) : status === 'current' ? (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFF"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                      ) : (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B0ADA6" strokeWidth="2.2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: status === 'locked' ? '#B0ADA6' : 'rgba(255,255,255,0.85)', letterSpacing: '0.04em' }}>D{i + 1}</div>
+                  </div>
+
+                  {status === 'done' && day.stops.length > 0 && (
+                    <div style={{ position: 'absolute', top: -6, right: -6, background: '#FFF', borderRadius: 10, padding: '1px 6px', fontSize: 10, fontWeight: 800, color: '#5B8A6E', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}>
+                      {day.stops.length}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 18, paddingBottom: 20, marginTop: -10 }}>
+          {[['#5B8A6E', 'Logged'], ['#C8A040', 'Current'], ['#E8E5DE', 'Upcoming']].map(([color, label]) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 4, background: color, border: color === '#E8E5DE' ? '1.5px solid #D5D1CA' : 'none' }}/>
+              <span style={{ fontSize: 11, color: '#9A9590', fontWeight: 600 }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen({ treks, onTrekUpdate }) {
+  const [units, setUnits] = React.useState(localStorage.getItem('td_units')||'km');
+  const handleUnits = u => { setUnits(u); localStorage.setItem('td_units',u); };
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(treks,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a');
+    a.href=url; a.download='trek-diary.json'; a.click(); URL.revokeObjectURL(url);
+  };
+  const clearData = () => { if(!window.confirm('Clear all trek data?')) return; localStorage.removeItem('trekdiary_treks'); onTrekUpdate([]); };
+
+  const Row = ({icon,label,right,onClick,danger}) => (
+    <div onClick={onClick} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px', cursor:onClick?'pointer':'default', background:'#FFF', borderRadius:16, marginBottom:8, boxShadow:'0 1px 6px rgba(0,0,0,0.05)' }}>
+      <span style={{ fontSize:18 }}>{icon}</span>
+      <span style={{ flex:1, fontSize:14, color:danger?'#C4524A':'#1A1917', fontWeight:600 }}>{label}</span>
+      {right && <span style={{ fontSize:12, color:'#B0ADA6', fontWeight:600 }}>{right}</span>}
+      {onClick && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={danger?'#C4524A':'#D5D1CA'} strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>}
+    </div>
+  );
+
+  return (
+    <div style={{ height:'100%', overflowY:'auto', background:LIGHT_BG, padding:'20px 18px 100px' }}>
+      <h2 style={{ fontSize:30, fontWeight:700, color:'#1A1917', margin:'4px 0 22px', fontFamily:"'Poppins', sans-serif" }}>Settings</h2>
+      <TD.Section title="Preferences">
+        <div style={{ background:'#FFF', borderRadius:16, padding:'14px', boxShadow:'0 1px 6px rgba(0,0,0,0.05)', marginBottom:8 }}>
+          <div style={{ fontSize:10, fontWeight:800, color:'#B0ADA6', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:10 }}>Distance Units</div>
+          <div style={{ display:'flex', gap:8 }}>
+            {['km','miles'].map(u=>(
+              <button key={u} onClick={()=>handleUnits(u)} style={{ flex:1, padding:'9px', borderRadius:12, border:'none', fontFamily:'inherit', fontSize:13, fontWeight:800, cursor:'pointer', background:units===u?'#5B8A6E':'#F7F5F0', color:units===u?'#FFF':'#9A9590', boxShadow:units===u?'0 2px 8px rgba(91,138,110,0.3)':'none' }}>{u}</button>
+            ))}
+          </div>
+        </div>
+      </TD.Section>
+      <TD.Section title="Data">
+        <Row icon="📤" label="Export Trek Data" right="JSON" onClick={exportData}/>
+        <Row icon="🗑️" label="Clear All Data" onClick={clearData} danger/>
+      </TD.Section>
+      <TD.Section title="About">
+        <div style={{ background:'#FFF', borderRadius:16, padding:'16px', boxShadow:'0 1px 6px rgba(0,0,0,0.05)' }}>
+          <div style={{ fontSize:24, fontWeight:700, color:'#1A1917', fontFamily:"'Poppins', sans-serif", marginBottom:6 }}>Trek Diary</div>
+          <div style={{ fontSize:13, color:'#9A9590', lineHeight:1.65, fontWeight:500 }}>Your offline trekking companion. All data lives locally on your device — no account, no cloud, no internet needed.</div>
+          <div style={{ marginTop:12, display:'flex', alignItems:'center', gap:5 }}>
+            <span style={{ width:7,height:7,borderRadius:'50%',background:'#5B8A6E',display:'inline-block' }}/>
+            <span style={{ fontSize:11, color:'#5B8A6E', fontWeight:800 }}>Offline Ready</span>
+          </div>
+        </div>
+      </TD.Section>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ios-frame.jsx — iOS Device Frame
+// ─────────────────────────────────────────────────────────────────────────────
+
+function IOSStatusBar({ dark = false, time = '9:41' }) {
+  const c = dark ? '#fff' : '#000';
+  return (
+    <div style={{
+      display: 'flex', gap: 154, alignItems: 'center', justifyContent: 'center',
+      padding: '21px 24px 19px', boxSizing: 'border-box',
+      position: 'relative', zIndex: 20, width: '100%',
+    }}>
+      <div style={{ flex: 1, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 1.5 }}>
+        <span style={{ fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 590, fontSize: 17, lineHeight: '22px', color: c }}>{time}</span>
+      </div>
+      <div style={{ flex: 1, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, paddingTop: 1, paddingRight: 1 }}>
+        <svg width="19" height="12" viewBox="0 0 19 12">
+          <rect x="0" y="7.5" width="3.2" height="4.5" rx="0.7" fill={c}/>
+          <rect x="4.8" y="5" width="3.2" height="7" rx="0.7" fill={c}/>
+          <rect x="9.6" y="2.5" width="3.2" height="9.5" rx="0.7" fill={c}/>
+          <rect x="14.4" y="0" width="3.2" height="12" rx="0.7" fill={c}/>
+        </svg>
+        <svg width="17" height="12" viewBox="0 0 17 12">
+          <path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z" fill={c}/>
+          <path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z" fill={c}/>
+          <circle cx="8.5" cy="10.5" r="1.5" fill={c}/>
+        </svg>
+        <svg width="27" height="13" viewBox="0 0 27 13">
+          <rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke={c} strokeOpacity="0.35" fill="none"/>
+          <rect x="2" y="2" width="20" height="9" rx="2" fill={c}/>
+          <path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill={c} fillOpacity="0.4"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function IOSDevice({ children, width = 402, height = 874, dark = false }) {
+  return (
+    <div style={{
+      width, height, borderRadius: 48, overflow: 'hidden',
+      position: 'relative', background: dark ? '#000' : '#F2F2F7',
+      boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
+      fontFamily: '-apple-system, system-ui, sans-serif',
+      WebkitFontSmoothing: 'antialiased',
+    }}>
+      <div style={{
+        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+      }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
+        <IOSStatusBar dark={dark} />
+      </div>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflow: 'auto' }}>{children}</div>
+      </div>
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
+        height: 34, display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+        paddingBottom: 8, pointerEvents: 'none',
+      }}>
+        <div style={{
+          width: 139, height: 5, borderRadius: 100,
+          background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// tweaks-panel.jsx — Tweaks Panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;
+    color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:22px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;
+    background:transparent;flex-shrink:0}
+  .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
+  .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
+`;
+
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
+      ? keyOrEdits : { [keyOrEdits]: val };
+    setValues((prev) => ({ ...prev, ...edits }));
+  }, []);
+  return [values, setTweak];
+}
+
+function TweaksPanel({ title = 'Tweaks', children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(clampToViewport) : null;
+    if (ro) { ro.observe(document.documentElement); return () => ro.disconnect(); }
+    window.addEventListener('resize', clampToViewport);
+    return () => window.removeEventListener('resize', clampToViewport);
+  }, [open, clampToViewport]);
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = { x: startRight - (ev.clientX - sx), y: startBottom - (ev.clientY - sy) };
+      clampToViewport();
+    };
+    const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} style={{
+        position: 'fixed', right: 16, bottom: 16, zIndex: 2147483645,
+        background: 'rgba(250,249,247,0.9)', backdropFilter: 'blur(12px)',
+        border: '0.5px solid rgba(255,255,255,0.6)', borderRadius: 10,
+        padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+        color: '#29261b', boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        fontFamily: 'inherit'
+      }}>⚙ Tweaks</button>
+    );
+  }
+
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" onClick={() => setOpen(false)}>✕</button>
+        </div>
+        <div className="twk-body">{children}</div>
+      </div>
+    </>
+  );
+}
+
+function TweakSection({ label, children }) {
+  return (
+    <>
+      <div className="twk-sect">{label}</div>
+      {children}
+    </>
+  );
+}
+
+function TweakColor({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <input type="color" className="twk-swatch" value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
+  return (
+    <div className="twk-row">
+      <div className="twk-lbl">
+        <span>{label}</span>
+        <span className="twk-val">{value}{unit}</span>
+      </div>
+      <input type="range" className="twk-slider" min={min} max={max} step={step}
+        value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// App
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TWEAK_DEFAULTS = {
+  "accentColor": "#5B8A6E",
+  "bgColor": "#F2F0EB",
+  "phoneScale": 85
+};
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [treks, setTreks] = React.useState(() => TrekData.getAll());
+  const [nav, setNav] = React.useState({ screen: 'home' });
+  const [tab, setTab] = React.useState('home');
+
+  const currentTrek = nav.trekId ? treks.find(t => t.id === nav.trekId) : null;
+  const go = (screen, extra = {}) => setNav({ screen, ...extra });
+
+  const renderScreen = () => {
+    switch (nav.screen) {
+      case 'home':
+        return <HomeScreen treks={treks}
+          onSelectTrek={t => { setTab('home'); go('trek-detail', { trekId: t.id }); }}
+          onCreateTrek={() => { setTab('create'); go('create'); }}/>;
+
+      case 'create':
+        return <CreateTrekScreen
+          onBack={() => { go('home'); setTab('home'); }}
+          onCreated={(updatedTreks, trek) => {
+            setTreks(updatedTreks);
+            go('trek-detail', { trekId: trek.id });
+            setTab('home');
+          }}/>;
+
+      case 'trek-detail':
+        return currentTrek ? <TrekDetailScreen trek={currentTrek}
+          onBack={() => go('home')}
+          onSelectStop={(stop, dayNum) => go('stop-detail', { trekId: currentTrek.id, dayNum, stopId: stop.id })}
+          onAddStop={dayNum => go('add-stop', { trekId: currentTrek.id, dayNum })}
+          onViewSummary={() => go('summary', { trekId: currentTrek.id })}
+          onViewPath={() => go('trek-path', { trekId: currentTrek.id })}
+          onTrekUpdate={updated => setTreks(updated)}/> : null;
+
+      case 'stop-detail': {
+        const trek = treks.find(t => t.id === nav.trekId);
+        const day = trek?.days.find(d => d.dayNum === nav.dayNum);
+        const stop = day?.stops.find(s => s.id === nav.stopId);
+        return stop ? <StopDetailScreen stop={stop} trekId={nav.trekId} dayNum={nav.dayNum}
+          onBack={() => go('trek-detail', { trekId: nav.trekId })}
+          onSave={updated => setTreks(updated)}/> : null;
+      }
+
+      case 'add-stop':
+        return <AddStopScreen trekId={nav.trekId} dayNum={nav.dayNum}
+          onBack={() => go('trek-detail', { trekId: nav.trekId })}
+          onAdded={updated => { setTreks(updated); go('trek-detail', { trekId: nav.trekId }); }}/>;
+
+      case 'summary':
+        return currentTrek ? <SummaryScreen trek={currentTrek}
+          onBack={() => go('trek-detail', { trekId: currentTrek.id })}/> : null;
+
+      case 'trek-path':
+        return currentTrek ? <TrekPathScreen trek={currentTrek}
+          onBack={() => go('trek-detail', { trekId: currentTrek.id })}
+          onSelectDay={dayNum => go('trek-detail', { trekId: currentTrek.id })}/> : null;
+
+      case 'settings':
+        return <SettingsScreen treks={treks} onTrekUpdate={updated => setTreks(updated)}/>;
+
+      default:
+        return <HomeScreen treks={treks}
+          onSelectTrek={t => go('trek-detail', { trekId: t.id })}
+          onCreateTrek={() => go('create')}/>;
+    }
+  };
+
+  const TABS = [
+    { id: 'home', label: 'Home', screen: 'home', icon:
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    },
+    { id: 'create', label: 'New', screen: 'create', icon:
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+    },
+    { id: 'settings', label: 'Settings', screen: 'settings', icon:
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    },
+  ];
+
+  const phoneContent = (
+    <div style={{ width: '100%', height: '100%', background: tweaks.bgColor,
+      display: 'flex', flexDirection: 'column', position: 'relative', fontFamily: "'Poppins', sans-serif" }}>
+
+      <div key={nav.screen + (nav.trekId || '') + (nav.stopId || '')} className="screen-slide"
+        style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+        {renderScreen()}
+      </div>
+
+      {!['stop-detail','add-stop','trek-path'].includes(nav.screen) && (
+        <div style={{ background: 'rgba(242,240,235,0.96)', backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(0,0,0,0.07)', padding: '8px 0 6px',
+          display: 'flex', justifyContent: 'space-around', flexShrink: 0 }}>
+          {TABS.map(t => {
+            const active = tab === t.id;
+            return (
+              <button key={t.id} onClick={() => { setTab(t.id); go(t.screen); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                  padding: '4px 18px', color: active ? tweaks.accentColor : '#C8C5BE',
+                  transition: 'color 0.15s' }}>
+                {t.icon}
+                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em' }}>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100vw', height: '100vh' }}>
+      <div className="phone-wrap" style={{ transform: `scale(${tweaks.phoneScale / 100})`, transformOrigin: 'center center', transition: 'transform 0.3s' }}>
+        <IOSDevice statusBarStyle="dark">
+          {phoneContent}
+        </IOSDevice>
+      </div>
+
+      <TweaksPanel>
+        <TweakSection label="Colours">
+          <TweakColor label="Accent" value={tweaks.accentColor} onChange={v => setTweak('accentColor', v)}/>
+          <TweakColor label="Background" value={tweaks.bgColor} onChange={v => setTweak('bgColor', v)}/>
+        </TweakSection>
+        <TweakSection label="Display">
+          <TweakSlider label="Phone Scale" value={tweaks.phoneScale} onChange={v => setTweak('phoneScale', v)} min={55} max={100} step={5}/>
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>

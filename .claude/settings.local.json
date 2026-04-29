@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(curl -s --max-filesize 10000000 \"https://api.anthropic.com/v1/design/h/SoHnAQmjZh2XWDFQ2F397w?open_file=Trek+Diary.html\" -o \"E:/Projects Internet room/trek_diary/design_raw.html\")",
+      "Bash(python3 -c ' *)",
+      "Bash(cp design_raw.html design_raw.gz)",
+      "Bash(gunzip design_raw.gz)",
+      "Bash(mkdir design_extracted)",
+      "Bash(tar -xf design_raw -C design_extracted)",
+      "Bash(flutter --version)",
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Bash(powershell -Command ' *)",
+      "Bash(flutter run *)",
+      "Bash(flutter create *)",
+      "Bash(flutter build *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
