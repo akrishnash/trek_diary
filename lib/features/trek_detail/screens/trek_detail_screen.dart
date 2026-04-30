@@ -23,10 +23,14 @@ class _TrekDetailScreenState extends ConsumerState<TrekDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final treks   = ref.watch(trekListProvider);
-    final trek    = treks.firstWhere((t) => t.id == widget.trekId);
-    final size    = MediaQuery.of(context).size;
-    final safe    = MediaQuery.of(context).padding;
+    final trek = ref.watch(
+      trekListProvider.select(
+        (list) => list.where((t) => t.id == widget.trekId).firstOrNull,
+      ),
+    );
+    if (trek == null) return const SizedBox.shrink();
+    final size = MediaQuery.sizeOf(context);
+    final safe = MediaQuery.paddingOf(context);
     final sheetAt = size.height * 0.44;
 
     return Scaffold(
@@ -36,7 +40,9 @@ class _TrekDetailScreenState extends ConsumerState<TrekDetailScreen> {
           // ── Photo ──────────────────────────────────────────────────────────
           Positioned.fill(
             child: CachedNetworkImage(
-              imageUrl: getTrekPhotoUrl(trek),
+              imageUrl: trek.coverImageUrl?.isNotEmpty == true
+                  ? trek.coverImageUrl!
+                  : getTrekPhotoUrl(trek),
               fit: BoxFit.cover,
               alignment: const Alignment(0, -0.2),
               placeholder: (_, __) => const ColoredBox(color: AppColors.heroDark),
@@ -66,28 +72,41 @@ class _TrekDetailScreenState extends ConsumerState<TrekDetailScreen> {
           ),
 
           // ── Action chips ───────────────────────────────────────────────────
+          // left: 62 reserves space for the back button; reverse: true keeps
+          // buttons right-aligned and scrolls toward the left on small screens.
           Positioned(
             top: safe.top + 12,
+            left: 62,
             right: 16,
-            child: Row(children: [
-              GlassButton(
-                label: 'Edit',
-                icon: const Icon(Icons.edit_rounded, size: 13, color: Colors.white),
-                onPressed: () => context.push('/trek/${trek.id}/edit'),
-              ),
-              const SizedBox(width: 8),
-              GlassButton(
-                label: 'Path',
-                icon: const Icon(Icons.route_rounded, size: 13, color: Colors.white),
-                onPressed: () => context.push('/trek/${trek.id}/path'),
-              ),
-              const SizedBox(width: 8),
-              GlassButton(
-                label: 'Summary',
-                icon: const Icon(Icons.bar_chart_rounded, size: 13, color: Colors.white),
-                onPressed: () => context.push('/trek/${trek.id}/summary'),
-              ),
-            ]),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: Row(children: [
+                GlassButton(
+                  label: 'Journal',
+                  icon: const Icon(Icons.auto_stories_rounded, size: 13, color: Colors.white),
+                  onPressed: () => context.push('/trek/${trek.id}/journal'),
+                ),
+                const SizedBox(width: 8),
+                GlassButton(
+                  label: 'Edit',
+                  icon: const Icon(Icons.edit_rounded, size: 13, color: Colors.white),
+                  onPressed: () => context.push('/trek/${trek.id}/edit'),
+                ),
+                const SizedBox(width: 8),
+                GlassButton(
+                  label: 'Path',
+                  icon: const Icon(Icons.route_rounded, size: 13, color: Colors.white),
+                  onPressed: () => context.push('/trek/${trek.id}/path'),
+                ),
+                const SizedBox(width: 8),
+                GlassButton(
+                  label: 'Summary',
+                  icon: const Icon(Icons.bar_chart_rounded, size: 13, color: Colors.white),
+                  onPressed: () => context.push('/trek/${trek.id}/summary'),
+                ),
+              ]),
+            ),
           ),
 
           // ── Hero text ──────────────────────────────────────────────────────
@@ -132,7 +151,35 @@ class _TrekDetailScreenState extends ConsumerState<TrekDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Days'.toUpperCase(), style: AppTextStyles.sectionLabel),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Days'.toUpperCase(), style: AppTextStyles.sectionLabel),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => context.push('/trek/${trek.id}/journal'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accent.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                  const Icon(Icons.auto_stories_rounded, size: 11, color: AppColors.accentLight),
+                                  const SizedBox(width: 4),
+                                  Text('Full Journal', style: AppTextStyles.label.copyWith(
+                                    color: AppColors.accentLight, fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  )),
+                                ]),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 12),
                       ...trek.days.map((day) => _DayCard(
                         day: day,
@@ -176,20 +223,24 @@ class _DayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logged = day.stops.isNotEmpty;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isOpen
-                ? AppColors.accent.withValues(alpha: 0.4)
-                : AppColors.borderLight,
-          ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isOpen
+              ? AppColors.accent.withValues(alpha: 0.4)
+              : AppColors.borderLight,
         ),
-        child: Column(
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
@@ -247,7 +298,8 @@ class _DayCard extends StatelessWidget {
               if (day.stops.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: GestureDetector(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
                     onTap: onAddStop,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -275,7 +327,7 @@ class _DayCard extends StatelessWidget {
                 ...day.stops.map((s) => _StopRow(stop: s, onTap: () => onStopTap(s))),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: GestureDetector(
+                  child: InkWell(
                     onTap: onAddStop,
                     child: Row(children: [
                       Icon(Icons.add_rounded, size: 14, color: AppColors.accent),
@@ -290,7 +342,8 @@ class _DayCard extends StatelessWidget {
               // ── Diary button ──────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                child: GestureDetector(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
                   onTap: onDiary,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 11),
@@ -343,6 +396,7 @@ class _DayCard extends StatelessWidget {
               ),
             ],
           ],
+          ),
         ),
       ),
     );
@@ -355,7 +409,7 @@ class _StopRow extends StatelessWidget {
   const _StopRow({required this.stop, required this.onTap});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => InkWell(
     onTap: onTap,
     child: Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),

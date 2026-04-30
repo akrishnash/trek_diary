@@ -6,8 +6,6 @@ import '../models/day.dart';
 import '../models/stop.dart';
 import '../models/diary_entry.dart';
 import '../../core/constants/app_constants.dart';
-// ignore: unused_import
-import '../../core/utils/id_generator.dart';
 
 // Sample data pre-loaded on first launch
 final _sampleTreks = [
@@ -71,13 +69,17 @@ class TrekRepository {
   TrekRepository(this._prefs);
 
   List<Trek> getAll() {
-    final raw = _prefs.getString(AppConstants.storageKeyTreks);
-    if (raw == null) {
-      _save(_sampleTreks);
-      return _sampleTreks;
+    try {
+      final raw = _prefs.getString(AppConstants.storageKeyTreks);
+      if (raw == null) {
+        _save(_sampleTreks);
+        return List.from(_sampleTreks);
+      }
+      final list = jsonDecode(raw) as List;
+      return list.map((e) => Trek.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return List.from(_sampleTreks);
     }
-    final list = jsonDecode(raw) as List;
-    return list.map((e) => Trek.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   void _save(List<Trek> treks) {
@@ -175,14 +177,8 @@ final completedCountProvider = Provider<int>((ref) =>
     ref.watch(trekListProvider).where((t) => t.completed).length);
 
 /// First non-completed trek — shown as the "active" spotlight on the dashboard.
-final activeTrekProvider = Provider<Trek?>((ref) {
-  final list = ref.watch(trekListProvider);
-  try {
-    return list.firstWhere((t) => !t.completed);
-  } catch (_) {
-    return null;
-  }
-});
+final activeTrekProvider = Provider<Trek?>((ref) =>
+    ref.watch(trekListProvider).where((t) => !t.completed).firstOrNull);
 
 // Helper: get a trek photo URL by index derived from trek name
 String getTrekPhotoUrl(Trek trek) {

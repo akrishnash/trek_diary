@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,11 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } on UnsupportedError {
+    // Firebase not configured for this platform (web/Windows) — auth features unavailable
+  }
 
   // Force portrait orientation
   await SystemChrome.setPreferredOrientations([
@@ -25,7 +30,6 @@ void main() async {
   ));
 
   final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('td_logged_in'); // TEMP: clear stuck guest auth — remove after auth screens confirmed
 
   runApp(
     ProviderScope(
