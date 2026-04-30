@@ -3,66 +3,77 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/trek.dart';
+import '../../../data/providers/auth_provider.dart';
 import '../../../data/repositories/trek_repository.dart';
 import '../../../shared/widgets/diff_badge.dart';
 import '../../../shared/widgets/glass.dart';
-import '../../../shared/widgets/stat_card.dart';
 import '../widgets/trek_card.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HomeScreen — outer widget is StatelessWidget; all ref.watch calls are
-// pushed into the smallest possible Consumer so the photo/scrim/tab bar
-// never rebuild when trek data changes.
-// ─────────────────────────────────────────────────────────────────────────────
-class HomeScreen extends StatelessWidget {
+// Dark bg matching onboarding
+const _kBg = Color(0xFF0E1510);
+const _kCardBg = Color(0xFF131A14);
+const _kCardBorder = Color(0xFF253022);
+const _kOverlay = Color(0x88000000);
+const _kDim = Color(0x99FFFFFF);
+
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // sizeOf / paddingOf only rebuild this widget on size/padding changes,
-    // not on arbitrary MediaQuery changes.
-    final size = MediaQuery.sizeOf(context);
-    final safe = MediaQuery.paddingOf(context);
-    final sheetTop = size.height * 0.42;
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.heroDark,
+      backgroundColor: _kBg,
       body: Stack(
         children: [
-          // ── Static layers — rebuilt only when HomeScreen mounts ────────────
-          const Positioned.fill(child: _HeroPhoto()),
-          const Positioned.fill(child: _Scrim()),
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 320,
+                pinned: true,
+                backgroundColor: _kBg,
+                elevation: 0,
+                automaticallyImplyLeading: false,
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.parallax,
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const _HeroPhoto(),
+                      // Same overlay as onboarding
+                      const ColoredBox(color: _kOverlay),
+                      const _Scrim(),
+                      Positioned(
+                        left: 24,
+                        right: 24,
+                        bottom: 32,
+                        child: const _HeroTextBlock(),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  _LogoutButton(),
+                  const SizedBox(width: 8),
+                  _CreateButtonSmall(onTap: () => context.push('/create')),
+                  const SizedBox(width: 16),
+                ],
+              ),
 
-          // ── Top-right glass create button ──────────────────────────────────
-          Positioned(
-            top: safe.top + 12,
-            right: 16,
-            child: _CreateButton(onTap: () => context.push('/create')),
+              SliverToBoxAdapter(
+                child: _ContentBody(
+                  onCreateTrek: () => context.push('/create'),
+                  onSelectTrek: (id) => context.push('/trek/$id'),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            ],
           ),
 
-          // ── Hero text — Consumer watches trekCount + totalStops only ───────
-          Positioned(
-            left: 22,
-            right: 22,
-            bottom: size.height - sheetTop + 24,
-            child: const _HeroTextBlock(),
-          ),
-
-          // ── Content sheet — Consumer watches full list for rendering ────────
-          Positioned(
-            top: sheetTop,
-            left: 0, right: 0, bottom: 0,
-            child: _ContentSheet(
-              onCreateTrek: () => context.push('/create'),
-              onSelectTrek: (id) => context.push('/trek/$id'),
-            ),
-          ),
-
-          // ── Tab bar — fully static ─────────────────────────────────────────
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: GlassTabBar(
@@ -97,7 +108,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Static hero photo — never rebuilds after first mount.
+// Hero photo — same URL logic as before, same as onboarding approach
 // ─────────────────────────────────────────────────────────────────────────────
 class _HeroPhoto extends StatelessWidget {
   const _HeroPhoto();
@@ -107,13 +118,13 @@ class _HeroPhoto extends StatelessWidget {
     imageUrl: AppConstants.homeHero,
     fit: BoxFit.cover,
     alignment: const Alignment(0.0, -0.3),
-    placeholder: (_, __) => const ColoredBox(color: AppColors.heroDark),
-    errorWidget:  (_, __, ___) => const ColoredBox(color: AppColors.heroDark),
+    placeholder: (_, __) => const ColoredBox(color: _kBg),
+    errorWidget:  (_, __, ___) => const ColoredBox(color: _kBg),
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Static gradient scrim — completely const, zero rebuild cost.
+// Bottom-fade scrim
 // ─────────────────────────────────────────────────────────────────────────────
 class _Scrim extends StatelessWidget {
   const _Scrim();
@@ -124,37 +135,33 @@ class _Scrim extends StatelessWidget {
       gradient: LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          Color(0x8C000000),
-          Color(0x00000000),
-          Color(0xF50D1A0D),
-        ],
-        stops: [0.0, 0.34, 0.68],
+        colors: [Color(0x00000000), Color(0xEE0E1510)],
+        stops: [0.35, 1.0],
       ),
     ),
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Frosted-glass create button (top-right).
+// Glass create button
 // ─────────────────────────────────────────────────────────────────────────────
-class _CreateButton extends StatelessWidget {
+class _CreateButtonSmall extends StatelessWidget {
   final VoidCallback onTap;
-  const _CreateButton({required this.onTap});
+  const _CreateButtonSmall({required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(12),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          width: 42, height: 42,
+          width: 38, height: 38,
           decoration: BoxDecoration(
-            color: AppColors.glassLightBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.glassLightBorder, width: 0.5),
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 0.5),
           ),
           child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
         ),
@@ -164,8 +171,66 @@ class _CreateButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hero text block — ConsumerWidget watching only the two count providers.
-// Rebuilds when trek count or stop count changes, not on any trek mutation.
+// Logout button
+// ─────────────────────────────────────────────────────────────────────────────
+class _LogoutButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => GestureDetector(
+    onTap: () async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: _kCardBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: _kCardBorder),
+          ),
+          title: Text(
+            'Sign out?',
+            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w500),
+          ),
+          content: Text(
+            'You\'ll need to sign in again to access your treks.',
+            style: GoogleFonts.poppins(color: _kDim, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancel',
+                style: GoogleFonts.poppins(color: _kDim, fontSize: 13)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Sign out',
+                style: GoogleFonts.poppins(color: Colors.red.shade400, fontSize: 13)),
+            ),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        await ref.read(authProvider.notifier).signOut();
+      }
+    },
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          width: 38, height: 38,
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.3), width: 0.5),
+          ),
+          child: const Icon(Icons.logout_rounded, color: Colors.white, size: 18),
+        ),
+      ),
+    ),
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero text — poppins w200 tracked, mirroring onboarding title style
 // ─────────────────────────────────────────────────────────────────────────────
 class _HeroTextBlock extends ConsumerWidget {
   const _HeroTextBlock();
@@ -179,36 +244,25 @@ class _HeroTextBlock extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // TIDE eyebrow: dot + label
-        Row(
-          children: [
-            Container(
-              width: 5, height: 5,
-              decoration: const BoxDecoration(
-                color: AppColors.accentLight,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text('Trek Diary', style: AppTextStyles.eyebrow),
-          ],
-        ),
-        const SizedBox(height: 10),
-
-        // Main heading
         Text(
-          'Trek\nDiary',
-          style: AppTextStyles.heroHeading.copyWith(
-            fontSize: 46, fontWeight: FontWeight.w800,
-            letterSpacing: -0.8, height: 1.05, color: Colors.white,
+          'TREK DIARY',
+          style: GoogleFonts.poppins(
+            fontSize: 30,
+            fontWeight: FontWeight.w200,
+            color: Colors.white,
+            letterSpacing: 8,
+            height: 1.0,
           ),
         ),
-        const SizedBox(height: 8),
-
-        // Live-updating subtitle
+        const SizedBox(height: 10),
         Text(
           '$trekCount ${trekCount == 1 ? 'trek' : 'treks'} · $stopCount stops recorded',
-          style: AppTextStyles.heroSubtitle,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w300,
+            color: Colors.white.withValues(alpha: 0.6),
+            letterSpacing: 0.2,
+          ),
         ),
       ],
     );
@@ -216,53 +270,34 @@ class _HeroTextBlock extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Content sheet — warm #F2F0EB surface.
-// Split into two Consumers so the stats bar and trek list rebuild independently.
+// Content body — dark themed, matching onboarding bg
 // ─────────────────────────────────────────────────────────────────────────────
-class _ContentSheet extends StatelessWidget {
+class _ContentBody extends StatelessWidget {
   final VoidCallback onCreateTrek;
   final ValueChanged<String> onSelectTrek;
 
-  const _ContentSheet({
-    required this.onCreateTrek,
-    required this.onSelectTrek,
-  });
+  const _ContentBody({required this.onCreateTrek, required this.onSelectTrek});
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: const BoxDecoration(
-      color: AppColors.sheet,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    child: ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 20, 18, 120),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Stats row — own Consumer, rebuilds only on count changes
-            _StatsRow(),
-            const SizedBox(height: 22),
-
-            // Active trek spotlight — own Consumer, rebuilds only when
-            // the active trek identity changes
-            _ActiveSpotlight(onTap: onSelectTrek),
-
-            // Full trek list — rebuilds whenever the list changes
-            _TrekListSection(
-              onCreateTrek: onCreateTrek,
-              onSelectTrek: onSelectTrek,
-            ),
-          ],
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _StatsRow(),
+        const SizedBox(height: 22),
+        _ActiveSpotlight(onTap: onSelectTrek),
+        _TrekListSection(
+          onCreateTrek: onCreateTrek,
+          onSelectTrek: onSelectTrek,
         ),
-      ),
+      ],
     ),
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stats row — watches three derived count providers.
+// Stats row
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatsRow extends ConsumerWidget {
   @override
@@ -273,17 +308,63 @@ class _StatsRow extends ConsumerWidget {
 
     if (total == 0) return const SizedBox.shrink();
 
-    return StatCard(stats: [
-      StatItem(label: 'Treks',     value: '$total'),
-      StatItem(label: 'Stops',     value: '$stops'),
-      StatItem(label: 'Completed', value: '$completed'),
-    ]);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+      decoration: BoxDecoration(
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kCardBorder, width: 0.8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _StatItem(label: 'Treks', value: '$total'),
+          _Divider(),
+          _StatItem(label: 'Stops', value: '$stops'),
+          _Divider(),
+          _StatItem(label: 'Completed', value: '$completed'),
+        ],
+      ),
+    );
   }
 }
 
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  const _StatItem({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Text(
+        value,
+        style: GoogleFonts.poppins(
+          fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 11, fontWeight: FontWeight.w300,
+          color: Colors.white.withValues(alpha: 0.5), letterSpacing: 0.5,
+        ),
+      ),
+    ],
+  );
+}
+
+class _Divider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 0.5, height: 32,
+    color: Colors.white.withValues(alpha: 0.12),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Active trek spotlight — highlighted card for the in-progress trek.
-// Watches activeTrekProvider; rebuilds only when the active trek changes.
+// Active trek spotlight
 // ─────────────────────────────────────────────────────────────────────────────
 class _ActiveSpotlight extends ConsumerWidget {
   final ValueChanged<String> onTap;
@@ -297,7 +378,6 @@ class _ActiveSpotlight extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section label with live indicator
         Row(
           children: [
             Container(
@@ -308,12 +388,16 @@ class _ActiveSpotlight extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Text('Active Trek'.toUpperCase(), style: AppTextStyles.sectionLabel),
+            Text(
+              'ACTIVE TREK',
+              style: GoogleFonts.poppins(
+                fontSize: 10, fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.45), letterSpacing: 1.8,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 10),
-
-        // Featured card — slightly taller than regular cards
         _FeaturedTrekCard(trek: active, onTap: () => onTap(active.id)),
         const SizedBox(height: 22),
       ],
@@ -322,8 +406,7 @@ class _ActiveSpotlight extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Featured card for the active trek — taller, shows day progress bar + next
-// unlogged day label.
+// Featured card for active trek
 // ─────────────────────────────────────────────────────────────────────────────
 class _FeaturedTrekCard extends StatelessWidget {
   final Trek trek;
@@ -344,9 +427,10 @@ class _FeaturedTrekCard extends StatelessWidget {
         height: 172,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: _kCardBorder, width: 0.8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
+              color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -360,62 +444,61 @@ class _FeaturedTrekCard extends StatelessWidget {
               CachedNetworkImage(
                 imageUrl: photo,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => const ColoredBox(color: AppColors.heroDark),
-                errorWidget:  (_, __, ___) => const ColoredBox(color: AppColors.heroDark),
+                placeholder: (_, __) => const ColoredBox(color: _kCardBg),
+                errorWidget:  (_, __, ___) => const ColoredBox(color: _kCardBg),
               ),
-
-              // Heavier scrim for featured card
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xBB000000), Color(0x44000000)],
+                    colors: [Color(0xCC000000), Color(0x44000000)],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.all(18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Top row: badges
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         DiffBadge(difficulty: trek.difficulty),
-                        // Progress fraction chip
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.35),
+                            color: Colors.black.withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 0.5),
                           ),
                           child: Text(
                             '${trek.daysLogged}/${trek.totalDays} days',
-                            style: AppTextStyles.label.copyWith(
-                              color: Colors.white, fontSize: 11,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white, fontSize: 11, fontWeight: FontWeight.w400,
                             ),
                           ),
                         ),
                       ],
                     ),
-
-                    // Bottom: trek name + next day label + progress
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(trek.name, style: AppTextStyles.cardTitleOnPhoto.copyWith(
-                          fontSize: 19,
-                        )),
+                        Text(
+                          trek.name,
+                          style: GoogleFonts.poppins(
+                            fontSize: 18, fontWeight: FontWeight.w600,
+                            color: Colors.white, height: 1.2,
+                          ),
+                        ),
                         const SizedBox(height: 2),
                         if (nextDay != null)
                           Text(
                             'Next up: ${nextDay.title}',
-                            style: AppTextStyles.label.copyWith(
-                              color: AppColors.onPhotoDim, fontSize: 11,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              fontSize: 11, fontWeight: FontWeight.w300,
                             ),
                           ),
                         const SizedBox(height: 10),
@@ -423,9 +506,9 @@ class _FeaturedTrekCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: progress,
-                            backgroundColor: Colors.white.withValues(alpha: 0.18),
+                            backgroundColor: Colors.white.withValues(alpha: 0.15),
                             valueColor: const AlwaysStoppedAnimation(AppColors.accentLight),
-                            minHeight: 4,
+                            minHeight: 3,
                           ),
                         ),
                       ],
@@ -442,8 +525,7 @@ class _FeaturedTrekCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Trek list section — only ConsumerWidget that watches the full list.
-// The active trek is already shown above; this shows all treks with a header.
+// Trek list section
 // ─────────────────────────────────────────────────────────────────────────────
 class _TrekListSection extends ConsumerWidget {
   final VoidCallback onCreateTrek;
@@ -467,12 +549,11 @@ class _TrekListSection extends ConsumerWidget {
           onAction: onCreateTrek,
         ),
         const SizedBox(height: 10),
-
         if (treks.isEmpty)
           const _EmptyState()
         else
           ...treks.map((trek) => TrekCard(
-            key: ValueKey(trek.id),   // stable key → no unnecessary reparenting
+            key: ValueKey(trek.id),
             trek: trek,
             onTap: () => onSelectTrek(trek.id),
           )),
@@ -482,7 +563,7 @@ class _TrekListSection extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Section header row — const-constructible sub-widgets.
+// Section header
 // ─────────────────────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -495,15 +576,21 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      Text(title.toUpperCase(), style: AppTextStyles.sectionLabel),
+      Text(
+        title.toUpperCase(),
+        style: GoogleFonts.poppins(
+          fontSize: 10, fontWeight: FontWeight.w500,
+          color: Colors.white.withValues(alpha: 0.45), letterSpacing: 1.8,
+        ),
+      ),
       if (action != null)
         GestureDetector(
           onTap: onAction,
           child: Text(
             action!,
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.accent,
-              fontWeight: FontWeight.w700,
+            style: GoogleFonts.poppins(
+              color: AppColors.accentLight,
+              fontWeight: FontWeight.w600,
               fontSize: 13,
             ),
           ),
@@ -513,34 +600,51 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Empty state — fully const, no rebuild cost ever.
+// Empty state
 // ─────────────────────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 40),
+    padding: const EdgeInsets.symmetric(vertical: 48),
     child: Column(
       children: [
         const Text('🏔️', style: TextStyle(fontSize: 44)),
         const SizedBox(height: 14),
         Text(
           'No treks yet',
-          style: AppTextStyles.cardTitle.copyWith(color: AppColors.textSecondary),
+          style: GoogleFonts.poppins(
+            fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white,
+          ),
         ),
         const SizedBox(height: 6),
         Text(
           'Start your first adventure',
-          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+          style: GoogleFonts.poppins(
+            fontSize: 12, fontWeight: FontWeight.w300,
+            color: Colors.white.withValues(alpha: 0.5),
+          ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 24),
         SizedBox(
-          width: 160,
+          width: 180,
           child: ElevatedButton(
             onPressed: () => context.push('/create'),
-            child: const Text('Create Trek'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: _kBg,
+              elevation: 0,
+              shape: const StadiumBorder(),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: Text(
+              'Create Trek',
+              style: GoogleFonts.poppins(
+                fontSize: 14, fontWeight: FontWeight.w600, color: _kBg,
+              ),
+            ),
           ),
         ),
       ],

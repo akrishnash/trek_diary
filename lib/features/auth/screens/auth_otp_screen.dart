@@ -1,29 +1,53 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/providers/auth_provider.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AuthPinScreen — TIDE screen 4/5 exact:
-//   dark bg · "Verify code" bold title · 4 OTP cells (first red-border when
-//   empty) · full custom dark numpad with sub-letters
-// Adapted for Trek Diary: user SETS a 4-digit PIN on first launch.
-// ─────────────────────────────────────────────────────────────────────────────
-class AuthPinScreen extends ConsumerStatefulWidget {
-  const AuthPinScreen({super.key});
+class AuthOtpScreen extends ConsumerStatefulWidget {
+  const AuthOtpScreen({super.key});
 
   @override
-  ConsumerState<AuthPinScreen> createState() => _AuthPinScreenState();
+  ConsumerState<AuthOtpScreen> createState() => _AuthOtpScreenState();
 }
 
-class _AuthPinScreenState extends ConsumerState<AuthPinScreen> {
+class _AuthOtpScreenState extends ConsumerState<AuthOtpScreen> {
   final List<int> _digits = [];
+  int _resendSeconds = 30;
+  Timer? _resendTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startResendTimer();
+  }
+
+  @override
+  void dispose() {
+    _resendTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startResendTimer() {
+    _resendTimer?.cancel();
+    setState(() => _resendSeconds = 30);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        if (_resendSeconds > 0) {
+          _resendSeconds--;
+        } else {
+          t.cancel();
+        }
+      });
+    });
+  }
 
   void _onDigit(int d) {
-    if (_digits.length >= 4) return;
+    if (_digits.length >= 6) return;
     setState(() => _digits.add(d));
-    if (_digits.length == 4) _submit();
+    if (_digits.length == 6) _submit();
   }
 
   void _onDelete() {
@@ -32,38 +56,18 @@ class _AuthPinScreenState extends ConsumerState<AuthPinScreen> {
   }
 
   Future<void> _submit() async {
-    final form  = ref.read(authFormProvider);
-    final notifier = ref.read(authProvider.notifier);
-    final pin   = _digits.map((d) => d.toString()).join();
-
-    if (form != null) {
-      await notifier.completeAuth(
-        name:            form.name,
-        email:           form.email,
-        profileComplete: true,
-      );
-      await notifier.savePin(pin);
-      ref.read(authFormProvider.notifier).state = null;
-    }
-    // Router redirect handles navigation to /
-  }
-
-  Future<void> _skip() async {
-    final form = ref.read(authFormProvider);
-    if (form != null) {
-      await ref.read(authProvider.notifier).completeAuth(
-        name:            form.name,
-        email:           form.email,
-        profileComplete: true,
-      );
-      ref.read(authFormProvider.notifier).state = null;
-    }
+    // TODO: Replace with real Firebase Phone Auth verification
+    // e.g. await FirebaseAuth.instance.signInWithCredential(...)
+    // For now, any 6-digit code succeeds.
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    context.push('/auth/profile');
   }
 
   @override
   Widget build(BuildContext context) {
     final form  = ref.watch(authFormProvider);
-    final email = form?.email ?? '';
+    final phone = form?.phone ?? '';
 
     return Scaffold(
       body: Container(
@@ -79,21 +83,19 @@ class _AuthPinScreenState extends ConsumerState<AuthPinScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Back chevron ─────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: _BackChevron(onTap: () => context.pop()),
               ),
               const SizedBox(height: 36),
 
-              // ── Title block (TIDE exact) ───────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Set your PIN',
+                      'Verify your number',
                       style: GoogleFonts.poppins(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
@@ -103,7 +105,7 @@ class _AuthPinScreenState extends ConsumerState<AuthPinScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Choose a 4-digit PIN to secure your\njournal${email.isNotEmpty ? '\n$email' : ''}',
+                      'Enter the 6-digit code sent to\n+91 $phone',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
@@ -116,33 +118,36 @@ class _AuthPinScreenState extends ConsumerState<AuthPinScreen> {
               ),
               const SizedBox(height: 44),
 
-              // ── 4 OTP cells — TIDE exact ──────────────────────────────────
+              // 6 OTP cells
               Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: List.generate(4, (i) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _PinCell(
+                  children: List.generate(6, (i) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    child: _OtpCell(
                       filled:  i < _digits.length,
                       digit:   i < _digits.length ? _digits[i] : null,
-                      // TIDE: first empty cell gets salmon border
-                      active: i == _digits.length,
+                      active:  i == _digits.length,
                     ),
                   )),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // "Skip PIN" text link (TIDE: "Continue with verification code")
+              // Resend link
               Center(
                 child: GestureDetector(
-                  onTap: _skip,
+                  onTap: _resendSeconds == 0 ? _startResendTimer : null,
                   child: Text(
-                    'Skip PIN',
+                    _resendSeconds > 0
+                        ? 'Resend code in ${_resendSeconds}s'
+                        : 'Resend code',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF8A9590),
+                      color: _resendSeconds == 0
+                          ? Colors.white
+                          : const Color(0xFF8A9590),
                     ),
                   ),
                 ),
@@ -150,7 +155,6 @@ class _AuthPinScreenState extends ConsumerState<AuthPinScreen> {
 
               const Spacer(),
 
-              // ── Custom dark numpad — TIDE exact ───────────────────────────
               _Numpad(onDigit: _onDigit, onDelete: _onDelete),
             ],
           ),
@@ -160,16 +164,13 @@ class _AuthPinScreenState extends ConsumerState<AuthPinScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OTP cell — matches TIDE verify screen cells:
-//   rounded square, dark fill, red/salmon border on active-empty cell
-// ─────────────────────────────────────────────────────────────────────────────
-class _PinCell extends StatelessWidget {
+// OTP cell — matches TIDE PIN cell style
+class _OtpCell extends StatelessWidget {
   final bool filled;
   final int? digit;
   final bool active;
 
-  const _PinCell({required this.filled, this.digit, required this.active});
+  const _OtpCell({required this.filled, this.digit, required this.active});
 
   @override
   Widget build(BuildContext context) {
@@ -177,19 +178,17 @@ class _PinCell extends StatelessWidget {
     if (filled) {
       border = Colors.white.withValues(alpha: 0.3);
     } else if (active) {
-      border = const Color(0xFFE07070); // TIDE's salmon/red border on first empty
+      border = const Color(0xFFE07070);
     } else {
       border = const Color(0xFF3A4240);
     }
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      width: 60, height: 66,
+      width: 46, height: 56,
       decoration: BoxDecoration(
-        color: filled
-            ? const Color(0xFF2E3530)
-            : const Color(0xFF252B28),
-        borderRadius: BorderRadius.circular(14),
+        color: filled ? const Color(0xFF2E3530) : const Color(0xFF252B28),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: border, width: 1.5),
       ),
       child: Center(
@@ -197,7 +196,7 @@ class _PinCell extends StatelessWidget {
             ? Text(
                 digit.toString(),
                 style: GoogleFonts.poppins(
-                  fontSize: 26,
+                  fontSize: 22,
                   fontWeight: FontWeight.w400,
                   color: Colors.white,
                 ),
@@ -208,10 +207,7 @@ class _PinCell extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Full custom numpad — TIDE screen 4/5 exact.
-//   3-column grid, dark rounded buttons, number + sub-letters
-// ─────────────────────────────────────────────────────────────────────────────
+// Numpad — identical to auth_pin_screen numpad
 class _Numpad extends StatelessWidget {
   final ValueChanged<int> onDigit;
   final VoidCallback onDelete;
@@ -245,7 +241,6 @@ class _Numpad extends StatelessWidget {
             subLabels: _subLabels,
             onDigit: onDigit,
           )),
-          // Bottom row: blank · 0 · delete
           SizedBox(
             height: 72,
             child: Row(
@@ -346,7 +341,6 @@ class _NumBtn extends StatelessWidget {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _BackChevron extends StatelessWidget {
   final VoidCallback onTap;
   const _BackChevron({required this.onTap});

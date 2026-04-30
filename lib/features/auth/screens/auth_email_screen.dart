@@ -45,8 +45,10 @@ class _AuthEmailScreenState extends ConsumerState<AuthEmailScreen> {
     if (!_valid) return;
     // Store in temporary Riverpod state so AuthPinScreen can read it
     ref.read(authFormProvider.notifier).state = (
-      name:  _nameCtrl.text.trim(),
-      email: _emailCtrl.text.trim(),
+      name:         _nameCtrl.text.trim(),
+      email:        _emailCtrl.text.trim(),
+      phone:        '',
+      signInMethod: 'email',
     );
     context.push('/auth/pin');
   }

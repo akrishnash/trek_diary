@@ -5,6 +5,9 @@ import '../../data/providers/auth_provider.dart';
 import '../../features/auth/screens/auth_landing_screen.dart';
 import '../../features/auth/screens/auth_email_screen.dart';
 import '../../features/auth/screens/auth_pin_screen.dart';
+import '../../features/auth/screens/auth_phone_screen.dart';
+import '../../features/auth/screens/auth_otp_screen.dart';
+import '../../features/auth/screens/auth_profile_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/create_trek/screens/create_trek_screen.dart';
 import '../../features/trek_detail/screens/trek_detail_screen.dart';
@@ -15,11 +18,9 @@ import '../../features/summary/screens/summary_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/edit_trek/screens/edit_trek_screen.dart';
 import '../../features/diary/screens/diary_entry_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
 // RouterNotifier — bridges Riverpod auth state to GoRouter's refreshListenable.
-// When authProvider OR sessionGuestProvider changes, GoRouter re-evaluates.
-// ─────────────────────────────────────────────────────────────────────────────
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(Ref ref) {
     ref.listen<AuthState>(authProvider, (_, __) => notifyListeners());
@@ -35,26 +36,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: ref.read(authProvider).isLoggedIn ? '/' : '/auth',
     refreshListenable: notifier,
 
-    // Redirect: gate every non-auth route behind login.
-    // sessionGuestProvider is session-only and not persisted to disk.
     redirect: (context, state) {
-      final loggedIn = ref.read(authProvider).isLoggedIn || ref.read(sessionGuestProvider);
-      final atAuth   = state.matchedLocation.startsWith('/auth');
+      final auth         = ref.read(authProvider);
+      final sessionGuest = ref.read(sessionGuestProvider);
+      final loggedIn     = auth.isLoggedIn || sessionGuest;
+      final profileDone  = auth.profileComplete || sessionGuest;
+      final atAuth       = state.matchedLocation.startsWith('/auth');
+      final atProfile    = state.matchedLocation == '/auth/profile';
+
       if (!loggedIn && !atAuth) return '/auth';
-      if (loggedIn  &&  atAuth) return '/';
+      if (loggedIn && !profileDone && !atProfile) return '/auth/profile';
+      if (loggedIn && profileDone && atAuth) return '/';
       return null;
     },
 
     routes: [
       // ── Auth flow ──────────────────────────────────────────────────────────
-      GoRoute(path: '/auth',       builder: (_, __) => const AuthLandingScreen()),
-      GoRoute(path: '/auth/email', builder: (_, __) => const AuthEmailScreen()),
-      GoRoute(path: '/auth/pin',   builder: (_, __) => const AuthPinScreen()),
+      GoRoute(path: '/auth',         builder: (_, __) => const AuthLandingScreen()),
+      GoRoute(path: '/auth/email',   builder: (_, __) => const AuthEmailScreen()),
+      GoRoute(path: '/auth/pin',     builder: (_, __) => const AuthPinScreen()),
+      GoRoute(path: '/auth/phone',   builder: (_, __) => const AuthPhoneScreen()),
+      GoRoute(path: '/auth/otp',     builder: (_, __) => const AuthOtpScreen()),
+      GoRoute(path: '/auth/profile', builder: (_, __) => const AuthProfileScreen()),
 
       // ── Main app ───────────────────────────────────────────────────────────
       GoRoute(path: '/',           builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/create',     builder: (_, __) => const CreateTrekScreen()),
       GoRoute(path: '/settings',   builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/profile',    builder: (_, __) => const ProfileScreen()),
       GoRoute(
         path: '/trek/:id',
         builder: (_, state) => TrekDetailScreen(

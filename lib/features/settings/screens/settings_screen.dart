@@ -81,10 +81,37 @@ class SettingsScreen extends ConsumerWidget {
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
+                  padding: EdgeInsets.fromLTRB(20, 24, 20, safe.bottom + 120),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Profile section
+                      Text('Account'.toUpperCase(), style: AppTextStyles.sectionLabel),
+                      const SizedBox(height: 12),
+                      _SettingsTile(
+                        icon: Icons.person_outline_rounded,
+                        label: 'My Profile',
+                        sub: 'Edit your name, bio, and trekking details',
+                        trailing: GestureDetector(
+                          onTap: () => context.push('/profile'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.accent.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text('Edit', style: AppTextStyles.label.copyWith(
+                              color: AppColors.accent, fontWeight: FontWeight.w700,
+                            )),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 28),
+
                       // Data section
                       Text('Data'.toUpperCase(), style: AppTextStyles.sectionLabel),
                       const SizedBox(height: 12),
